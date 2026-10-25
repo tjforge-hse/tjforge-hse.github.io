@@ -154,6 +154,10 @@ th,td{padding:9px 8px}
 
 .cfg-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto auto auto;gap:6px;align-items:center;margin-top:6px}.cfg-row.f{grid-template-columns:minmax(0,1fr) 90px auto}.cfg-row label{display:flex;gap:5px;align-items:center;font-size:12px;white-space:nowrap}.cfg-row .btn{padding:6px 9px}
 @media(max-width:830px){.cfg-row{grid-template-columns:22px minmax(0,1fr) auto auto}.cfg-row label{grid-column:2/-1}}
+
+.cal-sum{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}
+.tk-bar{height:10px;border-radius:99px;background:#e8eef5;overflow:hidden;margin:8px 0 12px;display:flex}.tk-bar i{display:block;height:100%}
+.tk-list{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:12px}.tk-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border)}.tk-row:last-child{border-bottom:0}.tk-row .grow{min-width:0;flex:1}
 </style>
 </head>
 <body>
@@ -245,6 +249,7 @@ th,td{padding:9px 8px}
      <div id="inspectionFooter" class="hidden" style="margin-top:14px"><div class="formgrid"><div><label>Frekuensi</label><select id="frequency" class="select"><option>Daily</option><option>Monthly</option><option>Annual</option></select></div><div><label>Foto kondisi / temuan</label><input id="inspPhoto" class="input" type="file" accept="image/*"></div><div class="full"><label>Remark</label><textarea id="inspRemark" rows="3" placeholder="Catatan inspeksi..."></textarea></div></div><div id="inspMsg" class="notice danger hidden" style="margin-top:12px"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="resetChecklist()">Reset</button><button class="btn success" onclick="saveInspection()">Simpan & Kirim Approval</button></div></div>
     </div>
    </div>
+     <div class="panel hidden" id="taskPanel" style="margin-top:18px"><div class="panel-head"><div><h3>Tugas Inspeksi Rutin</h3><div class="muted" id="taskMonth"></div></div></div><div id="taskSummary"></div><div class="tk-bar" id="taskBar"></div><div class="tk-list" id="taskList"></div><div class="muted" style="font-size:12px;margin-top:8px">Daftar ini hanya penanda. Inspeksi tetap dimulai dengan scan QR di asset.</div></div>
   </section>
 
 
@@ -349,6 +354,9 @@ th,td{padding:9px 8px}
   <div><label>Frekuensi default</label><select id="cfgDef" class="select"></select></div>
   <div class="full"><label>Catatan / petunjuk untuk inspector</label><textarea id="cfgNotes" rows="2" maxlength="1000" placeholder="mis. Timbang tabung CO2, selisih berat maks. 10%"></textarea></div>
  </div>
+ <div class="rv-h">Jadwal inspeksi rutin</div>
+ <div class="formgrid"><div><label>Aturan jadwal</label><select id="cfgSchedMode" class="select" onchange="cfgSchedToggle()"><option value="">Tidak ada (manual lewat Next Due)</option><option value="monthly">Bulanan dengan jendela tanggal</option></select></div><div id="cfgSchedBox" class="hidden"><label>Boleh diinspeksi tanggal … sampai batas tanggal …</label><div style="display:flex;gap:8px;align-items:center"><input id="cfgSchedStart" class="input" type="number" min="1" max="28" value="1" style="max-width:90px"><span>s/d</span><input id="cfgSchedEnd" class="input" type="number" min="1" max="28" value="5" style="max-width:90px"></div></div></div>
+ <small class="muted">Contoh: tanggal 1 s/d 5 berarti setiap bulan asset jenis ini harus sudah diinspeksi paling lambat tanggal 5. Inspeksi yang di-Reject tidak dihitung. Tanggal diizinkan 1–28.</small>
  <div class="rv-h">Pilihan frekuensi <span class="muted" style="font-weight:400">(nama + interval hari)</span></div><div id="cfgFreqs"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddFreq()">＋ Frekuensi</button>
  <div class="rv-h">Item checklist</div><div id="cfgItems"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddItem()">＋ Item</button>
  <div id="cfgMsg" class="notice danger hidden" style="margin-top:12px"></div>
@@ -1822,17 +1830,17 @@ const isBadSt=s=>["Rusak","NG","Expired"].includes(s);
 function syncDueStatuses(){DB.assets.forEach(a=>{if(!a.due||a.status==="Rusak"||a.status==="NG")return;let n=daysUntil(a.due);a.status=n<0?"Expired":n<=30?"Due Soon":(isNormalSt(a.status)?a.status:"Normal")});saveDB()}
 function notifications(){syncDueStatuses();return scopedAssets().filter(a=>a.due).map(a=>({asset:a,days:daysUntil(a.due)})).filter(x=>x.days<=30).sort((a,b)=>a.days-b.days)}
 
-function renderDashboard(){let aa=scopedAssets(),ff=scopedFindings(),ii=scopedInspections(),nn=notifications();let total=aa.length,normal=aa.filter(a=>isNormalSt(a.status)).length,due=aa.filter(a=>a.status==="Due Soon").length,bad=aa.filter(a=>isBadSt(a.status)).length,pending=ii.filter(i=>i.approval==="PENDING").length,open=ff.filter(f=>f.status!=="CLOSED").length;kTotal.textContent=total;kNormal.textContent=normal;kDue.textContent=due;kBad.textContent=bad;kPending.textContent=pending;kFind.textContent=open;heroText.textContent=`${normal} normal • ${due} due soon • ${bad} rusak/expired • ${pending} menunggu approval`;let att=aa.filter(a=>!isNormalSt(a.status)).slice(0,6);attentionList.innerHTML=att.length?att.map(a=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div><b>${a.id}</b><div class="muted" style="font-size:12px">${a.area||"-"} • ${a.location} • ${plantName(a.plant)}</div></div>${tag(a.status)}</div>`).join(""):'<div class="muted">Tidak ada asset yang perlu perhatian.</div>';dashNotifs.innerHTML=nn.slice(0,5).map(n=>`<div class="notice ${n.days<0?"danger":"warning"}"><b>${n.asset.id}</b><div style="font-size:12px">${n.days<0?`Lewat jatuh tempo ${Math.abs(n.days)} hari`:`Jatuh tempo dalam ${n.days} hari`}</div></div>`).join("")||'<div class="muted">Tidak ada notifikasi.</div>'}
+function renderDashboard(){let aa=scopedAssets(),ff=scopedFindings(),ii=scopedInspections(),nn=notifications();let total=aa.length,normal=aa.filter(a=>isNormalSt(a.status)).length,due=aa.filter(a=>a.status==="Due Soon").length,bad=aa.filter(a=>isBadSt(a.status)).length,pending=ii.filter(i=>i.approval==="PENDING").length,open=ff.filter(f=>f.status!=="CLOSED").length;kTotal.textContent=total;kNormal.textContent=normal;kDue.textContent=due;kBad.textContent=bad;kPending.textContent=pending;kFind.textContent=open;heroText.textContent=`${normal} normal • ${due} due soon • ${bad} rusak/expired • ${pending} menunggu approval`+schedHero();let att=aa.filter(a=>!isNormalSt(a.status)).slice(0,6);attentionList.innerHTML=att.length?att.map(a=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div><b>${a.id}</b><div class="muted" style="font-size:12px">${a.area||"-"} • ${a.location} • ${plantName(a.plant)}</div></div>${tag(a.status)}</div>`).join(""):'<div class="muted">Tidak ada asset yang perlu perhatian.</div>';dashNotifs.innerHTML=schedSummaryHtml()+nn.slice(0,5).map(n=>`<div class="notice ${n.days<0?"danger":"warning"}"><b>${n.asset.id}</b><div style="font-size:12px">${n.days<0?`Lewat jatuh tempo ${Math.abs(n.days)} hari`:`Jatuh tempo dalam ${n.days} hari`}</div></div>`).join("")||'<div class="muted">Tidak ada notifikasi.</div>'}
 
 function renderInventory(){
- syncDueStatuses();
+ syncDueStatuses();SIDX=inspByAsset();
  let aa=scopedAssets(),q=(assetSearch.value||"").toLowerCase(),tf=typeFilter.value,af=areaFilter.value,sf=statusFilter.value;
  let types=[...new Set(aa.map(a=>a.type))].sort(),oldType=tf;
  typeFilter.innerHTML='<option value="">Semua Jenis</option>'+types.map(t=>`<option>${t}</option>`).join("");typeFilter.value=oldType;
  let areas=[...new Set(aa.map(a=>a.area).filter(Boolean))].sort(),oldArea=af;
  areaFilter.innerHTML='<option value="">Semua Area</option>'+areas.map(x=>`<option>${x}</option>`).join("");areaFilter.value=oldArea;
  let rows=aa.filter(a=>(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="Normal"?isNormalSt(a.status):a.status===sf)));
- assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small><div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div><div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`:""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
+ assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small><div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`:""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
 }
 function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat menambah asset");
  editingAssetId=null;
@@ -1973,7 +1981,7 @@ function imageToSmallData(input,maxW=700){return new Promise(resolve=>{let f=inp
 function inspProblem(msg,idx){inspMsg.textContent=msg;inspMsg.classList.remove("hidden");document.querySelectorAll(".check-row.missing").forEach(x=>x.classList.remove("missing"));if(idx!=null){const r=document.querySelectorAll(".check-row")[idx];if(r){r.classList.add("missing");r.scrollIntoView({behavior:"smooth",block:"center"})}}else inspMsg.scrollIntoView({behavior:"smooth",block:"center"});toast(msg)}
 async function saveInspection(){
  if(!selected||verifiedAssetId!==selected.id)return inspProblem("Scan QR asset terlebih dahulu. Sesi scan hilang, tutup checklist lalu scan QR lagi.");const cfgI=cfgFor(selected.type).items;let items=cfgI.map(x=>x.t);{const miss=items.findIndex((it,i)=>!(it in answers)||(cfgI[i].photo&&!evidencePhotos[i]));if(miss>=0){const noAns=!(items[miss] in answers),noPh=cfgI[miss].photo&&!evidencePhotos[miss];return inspProblem(`Belum lengkap: item ${miss+1} "${items[miss]}" — ${noAns&&noPh?"belum dipilih OK/NG/N/A dan belum ada foto bukti":noAns?"belum dipilih OK/NG/N/A":"belum ada foto bukti"}.`,miss)}}inspMsg.classList.add("hidden");
- let fail=Object.values(answers).includes("NG"),photo=await imageToSmallData(inspPhoto),id=Date.now(),perItemEvidence={};items.forEach((item,i)=>perItemEvidence[item]=evidencePhotos[i]);DB.inspections.unshift({id,asset:selected.id,plant:selected.plant,date:new Date().toISOString().slice(0,10),frequency:frequency.value,result:fail?"FAIL":"PASS",answers:{...answers},evidence:perItemEvidence,remark:inspRemark.value,photo,inspector:me.name,approval:"PENDING",approvedBy:null,qrVerified:true});if(fail){selected.status="Rusak";let ng=Object.entries(answers).filter(x=>x[1]==="NG").map(x=>x[0]);createFinding(selected.id,"Item NG: "+ng.join(", "),"High","HSE / Maintenance",isoOffset(3),photo)}saveDB();toast(`Inspeksi ${fail?"FAIL":"PASS"} tersimpan & menunggu approval`);verifiedAssetId=null;selected=null;answers={};evidencePhotos={};checklistArea.innerHTML="Checklist akan tampil setelah scan QR.";inspectionFooter.classList.add("hidden");renderAll()
+ let fail=Object.values(answers).includes("NG"),photo=await imageToSmallData(inspPhoto),id=Date.now(),perItemEvidence={};items.forEach((item,i)=>perItemEvidence[item]=evidencePhotos[i]);DB.inspections.unshift({id,asset:selected.id,plant:selected.plant,date:localISO(),frequency:frequency.value,result:fail?"FAIL":"PASS",answers:{...answers},evidence:perItemEvidence,remark:inspRemark.value,photo,inspector:me.name,approval:"PENDING",approvedBy:null,qrVerified:true});if(fail){selected.status="Rusak";let ng=Object.entries(answers).filter(x=>x[1]==="NG").map(x=>x[0]);createFinding(selected.id,"Item NG: "+ng.join(", "),"High","HSE / Maintenance",isoOffset(3),photo)}saveDB();toast(`Inspeksi ${fail?"FAIL":"PASS"} tersimpan & menunggu approval`);verifiedAssetId=null;selected=null;answers={};evidencePhotos={};checklistArea.innerHTML="Checklist akan tampil setelah scan QR.";inspectionFooter.classList.add("hidden");renderAll()
 }
 function renderApproval(){let rows=scopedInspections().filter(i=>i.approval==="PENDING");approvalTable.innerHTML=rows.map(i=>`<tr><td>${i.id}</td><td><b>${i.asset}</b></td><td>${plantName(i.plant)}</td><td>${fmtDate(i.date)}</td><td>${i.inspector}</td><td>${tag(i.result)}</td><td>${i.evidence?Object.keys(i.evidence).length:0} foto</td><td>${i.photo?`<img class="photo" src="${i.photo}" onclick="window.open(this.src,'_blank')">`:"-"}</td><td><button class="btn primary small" onclick="openInspectionReview(${i.id})">🔍 Periksa Hasil</button></td></tr>`).join("")||'<tr><td colspan="9" class="muted">Tidak ada inspeksi pending.</td></tr>'}
 
@@ -2019,7 +2027,7 @@ function toggleCloseRequirements(){let closing=fuStatus.value==="CLOSED";fuPhoto
 fuPhoto.addEventListener("change",async()=>{let data=await imageToSmallData(fuPhoto,800);if(data){fuPhotoPreview.src=data;fuPhotoPreview.style.display="block"}})
 async function saveFindingUpdate(){let f=DB.findings.find(x=>x.id===editingFindingId);if(!f)return;let status=fuStatus.value,pic=fuPic.value.trim(),action=fuAction.value.trim(),verify=fuVerify.value.trim(),closeDate=fuCloseDate.value,newPhoto=await imageToSmallData(fuPhoto,800);if(!pic)return toast("PIC penyelesaian wajib diisi");if(!action)return toast("Tindakan perbaikan wajib diisi");if(status==="CLOSED"){if(!verify)return toast("Catatan verifikasi wajib diisi sebelum CLOSED");if(!closeDate)return toast("Tanggal penyelesaian wajib diisi sebelum CLOSED");if(!newPhoto&&!f.closePhoto)return toast("Bukti foto penyelesaian wajib dilampirkan sebelum CLOSED")}f.pic=pic;f.correctiveAction=action;f.verificationNote=verify;if(newPhoto)f.closePhoto=newPhoto;if(status==="CLOSED"){f.status="CLOSED";f.closedDate=closeDate;f.closedBy=me.name}else{f.status="IN PROGRESS";f.closedDate=null;f.closedBy=null}if(f.status==="CLOSED"){let left=DB.findings.some(x=>x.asset===f.asset&&x.status!=="CLOSED"&&x.id!==f.id),a=DB.assets.find(x=>x.id===f.asset);if(a&&!left&&(a.status==="Rusak"||a.status==="NG"))a.status="Normal"}saveDB();closeModal("findingUpdateModal");editingFindingId=null;renderAll();toast("Update finding berhasil disimpan")}
 
-function renderNotifications(){let nn=notifications();notificationList.innerHTML=nn.map(n=>`<div class="notice ${n.days<0?"danger":"warning"}"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>${n.asset.id} • ${plantName(n.asset.plant)}</b><div>${n.asset.name} • ${n.asset.location}</div><small class="muted">Due: ${fmtDate(n.asset.due)}</small></div>${tag(n.days<0?"Expired":"Due Soon")}</div><div style="margin-top:7px;font-weight:800">${n.days<0?`Terlambat ${Math.abs(n.days)} hari`:`Jatuh tempo dalam ${n.days} hari`}</div></div>`).join("")||'<div class="muted">Tidak ada asset yang jatuh tempo dalam 30 hari.</div>'}
+function renderNotifications(){let nn=notifications();notificationList.innerHTML=schedAlerts().map(schedAlertHtml).join("")+nn.map(n=>`<div class="notice ${n.days<0?"danger":"warning"}"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>${n.asset.id} • ${plantName(n.asset.plant)}</b><div>${n.asset.name} • ${n.asset.location}</div><small class="muted">Due: ${fmtDate(n.asset.due)}</small></div>${tag(n.days<0?"Expired":"Due Soon")}</div><div style="margin-top:7px;font-weight:800">${n.days<0?`Terlambat ${Math.abs(n.days)} hari`:`Jatuh tempo dalam ${n.days} hari`}</div></div>`).join("")||'<div class="muted">Tidak ada asset yang jatuh tempo dalam 30 hari.</div>'}
 
 
 function renderUsers(){
@@ -2065,68 +2073,91 @@ function changeCalendarMonth(n){calendarDate=new Date(calendarDate.getFullYear()
 const C={view:"month",sel:null,type:"",kind:""};
 const dkey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function calAssets(){return scopedAssets().filter(a=>!C.type||a.type===C.type)}
-function calEvents(){
- const assets=calAssets(),ids=new Set(assets.map(a=>a.id)),ev={};
+function calEvents(months){
+ const assets=calAssets(),ids=new Set(assets.map(x=>x.id)),ev={},idx=inspByAsset();
  const add=(d,e)=>{if(!d)return;d=String(d).slice(0,10);(ev[d]=ev[d]||[]).push(e)};
- if(!C.kind||C.kind==="due")assets.forEach(a=>{if(!a.due)return;const n=daysUntil(a.due);add(a.due,{k:"due",c:n<0?"late":n<=7?"soon":"schedule",t:(n<0?"Terlambat ":"Due ")+a.id,id:a.id,n,a})});
+ months=months||[[calendarDate.getFullYear(),calendarDate.getMonth()]];
+ if(!C.kind||C.kind==="due")assets.forEach(a=>{
+  if(a.due){const n=daysUntil(a.due);add(a.due,{k:"due",c:n<0?"late":n<=7?"soon":"schedule",t:(n<0?"Terlambat ":"Due ")+a.id,id:a.id,n,a})}
+  if(schedOf(a.type))months.forEach(ym=>{const r=schedMonth(a,ym[0],ym[1],idx);if(r)add(r.dl,{k:"sched",c:SCHED_CLS[r.st],t:"Batas inspeksi "+a.id,id:a.id,a,r})})});
  if(!C.kind||C.kind==="insp")DB.inspections.filter(i=>ids.has(i.asset)).forEach(i=>add(i.date,{k:"insp",c:i.result==="FAIL"?"fail":"history",t:i.result+" "+i.asset,id:i.id,i}));
  if(!C.kind||C.kind==="find")DB.findings.filter(f=>ids.has(f.asset)&&f.status!=="CLOSED").forEach(f=>add(f.target,{k:"find",c:"find",t:"Finding "+f.asset,id:f.id,f}));
  return ev}
 function calView(v){C.view=v;renderCalendar()}
 function calToday(){calendarDate=new Date();C.sel=dkey(new Date());renderCalendar()}
 function calSelect(k){C.sel=k;renderCalendar();const d=document.getElementById("calDetail");if(d&&d.scrollIntoView)d.scrollIntoView({behavior:"smooth",block:"nearest"})}
+function calChips(list){
+ const sc=list.filter(e=>e.k==="sched"),other=list.filter(e=>e.k!=="sched"),out=[];
+ if(sc.length){const d=sc.filter(e=>isDoneSt(e.r.st)).length,bad=sc.some(e=>e.r.st==="late"||e.r.st==="missed"),due=sc.some(e=>e.r.st==="due");
+  out.push({c:bad?"late":due?"soon":d===sc.length?"history":"schedule",t:"Batas inspeksi "+d+"/"+sc.length})}
+ return out.concat(other)}
 function calItem(e){
+ if(e.k==="sched"){const a=e.a,r=e.r;return `<div class="cal-item"><div class="grow"><b>${esc(a.id)}</b> • ${esc(a.type)} • ${esc(plantName(a.plant))} • ${esc(a.area||"-")}<div class="muted" style="font-size:12px">${esc(a.location||"-")} • ${esc(schedText(r))}</div></div>${schedTag(r)}<button class="btn soft small" onclick="go('inspection');openScanModal('${esc(a.id)}')">☑ Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${esc(a.id)}')">🕘 Riwayat</button></div>`}
  if(e.k==="due"){const a=e.a,n=e.n;return `<div class="cal-item"><div class="grow"><b>${esc(a.id)}</b> • ${esc(a.type)} • ${esc(plantName(a.plant))} • ${esc(a.area||"-")}<div class="muted" style="font-size:12px">${esc(a.location||"-")} • Jatuh tempo ${fmtDate(a.due)} (${n<0?Math.abs(n)+" hari terlambat":n===0?"hari ini":n+" hari lagi"})</div></div>${tag(a.status)}<button class="btn soft small" onclick="go('inspection');openScanModal('${esc(a.id)}')">☑ Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${esc(a.id)}')">🕘 Riwayat</button></div>`}
  if(e.k==="insp"){const i=e.i;return `<div class="cal-item"><div class="grow"><b>${esc(i.asset)}</b> • ${esc(i.frequency||"-")} • oleh ${esc(i.inspector||"-")}</div>${tag(i.result)}${tag(i.approval)}<button class="btn soft small" onclick="openInspectionReview(${i.id})">🔍 Detail</button></div>`}
  const f=e.f;return `<div class="cal-item"><div class="grow"><b>${esc(f.id)}</b> • ${esc(f.asset)}<div class="muted" style="font-size:12px">${esc(f.desc)} • PIC ${esc(f.pic||"-")}</div></div>${tag(f.severity)}${tag(f.status)}<button class="btn soft small" onclick="openFindingHistory('${esc(f.id)}')">🔍 Detail</button></div>`}
 function calGroups(list){
- const g=[["due","⏰ Jadwal jatuh tempo"],["insp","☑ Inspeksi dilakukan"],["find","⚠ Target penyelesaian finding"]];
- return g.map(x=>{const l=list.filter(e=>e.k===x[0]);return l.length?`<div class="cal-grp">${x[1]} (${l.length})</div>`+l.map(calItem).join(""):""}).join("")}
+ const g=[["sched","📅 Batas inspeksi rutin"],["due","⏰ Jadwal jatuh tempo (Next Due)"],["insp","☑ Inspeksi dilakukan"],["find","⚠ Target penyelesaian finding"]],ord={late:0,due:1,planned:2,pending:3,doneLate:4,done:5,missed:6};
+ return g.map(x=>{let l=list.filter(e=>e.k===x[0]);if(x[0]==="sched")l=l.slice().sort((p,q)=>ord[p.r.st]-ord[q.r.st]||p.id.localeCompare(q.id));return l.length?`<div class="cal-grp">${x[1]} (${l.length})</div>`+l.map(calItem).join(""):""}).join("")}
 function renderCalendar(){
  const g=document.getElementById("calendarGrid");if(!g)return;
- const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),pad=n=>String(n).padStart(2,"0"),pre=y+"-"+pad(m+1),today=dkey(new Date());
+ const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),pre=y+"-"+pad2(m+1),today=dkey(new Date());
  document.getElementById("calendarMonthLabel").textContent=calendarDate.toLocaleDateString("id-ID",{month:"long",year:"numeric"});
  calVMonth.className="btn small "+(C.view==="month"?"primary":"soft");calVAgenda.className="btn small "+(C.view==="agenda"?"primary":"soft");
  const types=[...new Set(scopedAssets().map(a=>a.type))].sort();
  if(calType.options.length!==types.length+1||C.type&&!types.includes(C.type)){if(C.type&&!types.includes(C.type))C.type="";calType.innerHTML='<option value="">Semua jenis</option>'+types.map(t=>`<option>${esc(t)}</option>`).join("")}
  calType.value=C.type;calKind.value=C.kind;
- const ev=calEvents(),assets=calAssets();
+ const assets=calAssets(),idx=inspByAsset();
  const dueM=assets.filter(a=>String(a.due||"").startsWith(pre)).length;
  const doneSet=new Set(DB.inspections.filter(i=>String(i.date).startsWith(pre)&&assets.some(a=>a.id===i.asset)).map(i=>i.asset));
  const late=assets.filter(a=>a.due&&a.due<today).length,soon=assets.filter(a=>a.due&&a.due>=today&&daysUntil(a.due)<=7).length;
  const pct=assets.length?Math.round(doneSet.size*100/assets.length):0;
- calSummary.innerHTML=`<div><small>Jatuh tempo bulan ini</small><b>${dueM}</b></div><div><small>Asset diinspeksi bulan ini</small><b>${doneSet.size}</b> <span class="muted">/ ${assets.length} (${pct}%)</span></div><div><small>Terlambat (semua)</small><b style="color:${late?"var(--red)":"inherit"}">${late}</b></div><div><small>Due ≤ 7 hari</small><b style="color:${soon?"#b46b00":"inherit"}">${soon}</b></div>`;
+ const sm=assets.map(a=>schedMonth(a,y,m,idx)).filter(Boolean),smDone=sm.filter(r=>isDoneSt(r.st)).length,smBad=sm.filter(r=>r.st==="late"||r.st==="missed").length;
+ calSummary.innerHTML=(sm.length?`<div><small>Inspeksi rutin (bulan ini)</small><b>${smDone}</b> <span class="muted">/ ${sm.length} selesai</span>${smBad?` <span class="tag bad">${smBad} terlambat</span>`:""}</div>`:"")+
+  `<div><small>Jatuh tempo bulan ini</small><b>${dueM}</b></div><div><small>Asset diinspeksi bulan ini</small><b>${doneSet.size}</b> <span class="muted">/ ${assets.length} (${pct}%)</span></div><div><small>Terlambat (Next Due)</small><b style="color:${late?"var(--red)":"inherit"}">${late}</b></div><div><small>Due ≤ 7 hari</small><b style="color:${soon?"#b46b00":"inherit"}">${soon}</b></div>`;
  const det=document.getElementById("calDetail");
  if(C.view==="agenda"){
   g.style.display="none";
-  const end=dkey(new Date(Date.now()+60*86400000)),keys=Object.keys(ev).filter(k=>(k<=end)&&ev[k].some(e=>e.k!=="insp"&&(k>=today||e.k==="due"))).sort();
+  const now=new Date(),mo=[0,1,2].map(k=>{const d=new Date(now.getFullYear(),now.getMonth()+k,1);return[d.getFullYear(),d.getMonth()]}),ev=calEvents(mo);
+  const end=dkey(new Date(Date.now()+60*86400000));
+  const keep=(e,k)=>e.k==="sched"?!(isDoneSt(e.r.st)||e.r.st==="missed"):e.k==="due"||e.k==="find"?(k>=today||e.k==="due"):false;
+  const keys=Object.keys(ev).filter(k=>k<=end&&ev[k].some(e=>keep(e,k))).sort();
   det.style.borderTop="0";det.style.paddingTop="0";
-  det.innerHTML=keys.map(k=>{const l=ev[k].filter(e=>e.k!=="insp");return `<div class="cal-agenda-day" style="color:${k<today?"var(--red)":"inherit"}">${fmtDate(k)}${k<today?" • terlambat":k===today?" • hari ini":""}</div>`+l.map(calItem).join("")}).join("")||'<div class="muted">Tidak ada jadwal dalam 60 hari ke depan.</div>';
+  det.innerHTML=keys.map(k=>{const l=ev[k].filter(e=>keep(e,k));return `<div class="cal-agenda-day" style="color:${k<today?"var(--red)":"inherit"}">${fmtDate(k)}${k<today?" • terlambat":k===today?" • hari ini":""}</div>`+l.map(calItem).join("")}).join("")||'<div class="muted">Tidak ada jadwal dalam 60 hari ke depan.</div>';
   return}
+ const ev=calEvents();
  g.style.display="";det.style.borderTop="";det.style.paddingTop="";
  const first=new Date(y,m,1),lead=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
  let h=["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map(x=>'<div class="cal-week">'+x+'</div>').join("");
  for(let i=0;i<lead;i++)h+='<div class="cal-day dim"></div>';
- for(let d=1;d<=days;d++){const key=pre+"-"+pad(d),list=ev[key]||[];
-  h+='<div class="cal-day'+(key===today?" today":"")+(key===C.sel?" sel":"")+'" tabindex="0" onclick="calSelect(\''+key+'\')" onkeydown="if(event.key===\'Enter\')calSelect(\''+key+'\')"><div class="cal-num">'+d+'</div>'+list.slice(0,3).map(e=>'<div class="cal-event '+e.c+'" title="'+esc(e.t)+'">'+esc(e.t)+'</div>').join("")+(list.length>3?'<div class="cal-event" style="background:#eef2f6;color:#52667a">+'+(list.length-3)+' lagi</div>':"")+'</div>'}
+ for(let d=1;d<=days;d++){const key=pre+"-"+pad2(d),chips=calChips(ev[key]||[]);
+  h+='<div class="cal-day'+(key===today?" today":"")+(key===C.sel?" sel":"")+'" tabindex="0" onclick="calSelect(\''+key+'\')" onkeydown="if(event.key===\'Enter\')calSelect(\''+key+'\')"><div class="cal-num">'+d+'</div>'+chips.slice(0,3).map(e=>'<div class="cal-event '+e.c+'" title="'+esc(e.t)+'">'+esc(e.t)+'</div>').join("")+(chips.length>3?'<div class="cal-event" style="background:#eef2f6;color:#52667a">+'+(chips.length-3)+' lagi</div>':"")+'</div>'}
  g.innerHTML=h;
  det.innerHTML=C.sel&&C.sel.startsWith(pre)?`<h4 style="margin:0">${fmtDate(C.sel)}</h4>`+(calGroups(ev[C.sel]||[])||'<div class="muted" style="margin-top:6px">Tidak ada kegiatan pada tanggal ini.</div>'):'<div class="muted">Klik sebuah tanggal untuk melihat detail jadwal, inspeksi dan finding.</div>'}
 function icsEsc(t){return String(t||"").replace(/[\;,]/g,m=>"\\"+m).replace(/\n/g,"\\n")}
 function dlFile(name,mime,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function exportCalendarICS(){
  if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengekspor jadwal");
- const as=calAssets().filter(a=>a.due);if(!as.length)return toast("Tidak ada jadwal untuk diekspor");
- const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//TJFI//Fire Safety//ID","CALSCALE:GREGORIAN"],stamp=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
- as.forEach(a=>{const d=a.due.replace(/-/g,""),nx=new Date(a.due+"T12:00:00");nx.setDate(nx.getDate()+1);
-  L.push("BEGIN:VEVENT","UID:"+icsEsc(a.id)+"-"+d+"@tjfi-fire-safety","DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+dkey(nx).replace(/-/g,""),
-   "SUMMARY:"+icsEsc("Inspeksi "+a.id+" ("+a.type+")"),"DESCRIPTION:"+icsEsc(plantName(a.plant)+" | "+(a.area||"-")+" | "+(a.location||"-")),
-   "BEGIN:VALARM","TRIGGER:-P3D","ACTION:DISPLAY","DESCRIPTION:Inspeksi segera jatuh tempo","END:VALARM","END:VEVENT")});
- L.push("END:VCALENDAR");dlFile("jadwal_inspeksi_"+dkey(new Date())+".ics","text/calendar;charset=utf-8",L.join("\r\n"));toast("Ekspor "+as.length+" jadwal (.ics) selesai")}
+ const as=calAssets().filter(a=>a.due||schedOf(a.type));if(!as.length)return toast("Tidak ada jadwal untuk diekspor");
+ const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//TJFI//Fire Safety//ID","CALSCALE:GREGORIAN"],stamp=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z",today=localISO();let n=0;
+ const nextDay=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return dkey(x).replace(/-/g,"")};
+ as.forEach(a=>{
+  if(a.due){n++;const d=a.due.replace(/-/g,"");
+   L.push("BEGIN:VEVENT","UID:"+icsEsc(a.id)+"-"+d+"@tjfi-fire-safety","DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+nextDay(a.due),
+    "SUMMARY:"+icsEsc("Jatuh tempo "+a.id+" ("+a.type+")"),"DESCRIPTION:"+icsEsc(plantName(a.plant)+" | "+(a.area||"-")+" | "+(a.location||"-")),
+    "BEGIN:VALARM","TRIGGER:-P3D","ACTION:DISPLAY","DESCRIPTION:Segera jatuh tempo","END:VALARM","END:VEVENT")}
+  const sc=schedOf(a.type);
+  if(sc){n++;const t=new Date();let y=t.getFullYear(),m=t.getMonth();let dl=y+"-"+pad2(m+1)+"-"+pad2(sc.end);if(dl<today){const nm=new Date(y,m+1,1);dl=nm.getFullYear()+"-"+pad2(nm.getMonth()+1)+"-"+pad2(sc.end)}
+   L.push("BEGIN:VEVENT","UID:"+icsEsc(a.id)+"-rutin@tjfi-fire-safety","DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+dl.replace(/-/g,""),"DTEND;VALUE=DATE:"+nextDay(dl),"RRULE:FREQ=MONTHLY;BYMONTHDAY="+sc.end,
+    "SUMMARY:"+icsEsc("Batas inspeksi bulanan "+a.id+" ("+a.type+")"),"DESCRIPTION:"+icsEsc("Inspeksi tanggal "+sc.start+"-"+sc.end+" setiap bulan. "+plantName(a.plant)+" | "+(a.area||"-")+" | "+(a.location||"-")),
+    "BEGIN:VALARM","TRIGGER:-P2D","ACTION:DISPLAY","DESCRIPTION:Batas inspeksi bulanan","END:VALARM","END:VEVENT")}});
+ L.push("END:VCALENDAR");dlFile("jadwal_inspeksi_"+dkey(new Date())+".ics","text/calendar;charset=utf-8",L.join("\r\n"));toast("Ekspor "+n+" jadwal (.ics) selesai")}
 function exportCalendarCSV(){
  if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengekspor jadwal");
- const as=calAssets().filter(a=>a.due).sort((x,y)=>x.due.localeCompare(y.due));if(!as.length)return toast("Tidak ada jadwal untuk diekspor");
- const rows=[["Asset","Jenis","Plant","Area","Lokasi","Jatuh tempo","Sisa hari","Status"]].concat(as.map(a=>[a.id,a.type,plantName(a.plant),a.area,a.location,a.due,daysUntil(a.due),a.status]));
- dlFile("jadwal_inspeksi_"+dkey(new Date())+".csv","text/csv;charset=utf-8","﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"));toast("Ekspor "+as.length+" jadwal (CSV) selesai")}
+ const as=calAssets().sort((x,y)=>String(x.due||"9999").localeCompare(String(y.due||"9999"))||x.id.localeCompare(y.id));if(!as.length)return toast("Tidak ada jadwal untuk diekspor");
+ const idx=inspByAsset();
+ const rows=[["Asset","Jenis","Plant","Area","Lokasi","Next Due","Sisa hari","Status","Aturan inspeksi rutin","Status inspeksi bulan ini","Batas bulan ini"]].concat(as.map(a=>{const r=schedNow(a,idx);return[a.id,a.type,plantName(a.plant),a.area,a.location,a.due,a.due?daysUntil(a.due):"",a.status,r?"Bulanan tgl "+r.sc.start+"-"+r.sc.end:"-",r?SCHED_LBL[r.st][0]:"-",r?r.dl:""]}));
+ dlFile("jadwal_inspeksi_"+dkey(new Date())+".csv","text/csv;charset=utf-8","﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"));toast("Ekspor "+as.length+" asset (CSV) selesai")}
 
 /* ===== RIWAYAT (view-only untuk semua role; ekspor & log aktivitas khusus admin) ===== */
 const H={tab:"insp",limit:100,logs:null,busy:false,err:"",total:0,ready:false};
@@ -2219,8 +2250,8 @@ const DEFAULT_FREQS=[{name:"Daily",days:1},{name:"Monthly",days:30},{name:"Annua
 function tplFor(type){const t=(DB.templates||[]).find(x=>x.type===type);return t&&t.items&&t.items.length?t:null}
 function cfgFor(type){
  const t=tplFor(type);
- if(t)return{items:t.items.map(x=>({t:x.t,photo:x.photo!==false})),freqs:(t.frequencies&&t.frequencies.length?t.frequencies:DEFAULT_FREQS).map(f=>({name:f.name,days:Number(f.days)||0})),def:t.defaultFreq||"",standard:t.standard||"",notes:t.notes||"",custom:true,by:t.updatedBy||"",at:t.updatedAt||""};
- return{items:(CHECKLISTS[type]||CHECKLISTS.Other).map(x=>({t:x,photo:true})),freqs:DEFAULT_FREQS.map(f=>({...f})),def:"Monthly",standard:"",notes:"",custom:false,by:"",at:""}}
+ if(t)return{items:t.items.map(x=>({t:x.t,photo:x.photo!==false})),freqs:(t.frequencies&&t.frequencies.length?t.frequencies:DEFAULT_FREQS).map(f=>({name:f.name,days:Number(f.days)||0})),def:t.defaultFreq||"",standard:t.standard||"",notes:t.notes||"",custom:true,schedule:(t.schedule&&t.schedule.mode)?t.schedule:null,by:t.updatedBy||"",at:t.updatedAt||""};
+ return{items:(CHECKLISTS[type]||CHECKLISTS.Other).map(x=>({t:x,photo:true})),freqs:DEFAULT_FREQS.map(f=>({...f})),def:"Monthly",standard:"",notes:"",custom:false,schedule:null,by:"",at:""}}
 function cfgBanner(c){return(c.standard||c.notes)?`<div class="notice" style="margin:0 0 10px">${c.standard?`<div><b>Standar:</b> ${esc(c.standard)}</div>`:""}${c.notes?`<div style="margin-top:4px;white-space:pre-line">${esc(c.notes)}</div>`:""}</div>`:""}
 function cfgAllTypes(){return[...new Set([...Object.keys(CHECKLISTS),...DB.assets.map(a=>a.type),...(DB.templates||[]).map(t=>t.type),...(CFG.extra||[])].filter(Boolean))].sort()}
 function cfgTypeOptions(){
@@ -2234,7 +2265,7 @@ function openCfgModal(){
  cfgType.value=(selected&&types.includes(selected.type))?selected.type:types[0];cfgLoad();cfgModal.classList.add("open")}
 function cfgLoad(){
  const c=cfgFor(cfgType.value);CFG.type=cfgType.value;CFG.items=c.items;CFG.freqs=c.freqs;
- cfgStd.value=c.standard;cfgNotes.value=c.notes;cfgMsg.classList.add("hidden");
+ cfgStd.value=c.standard;cfgNotes.value=c.notes;cfgSchedMode.value=c.schedule?"monthly":"";cfgSchedStart.value=c.schedule?c.schedule.start:1;cfgSchedEnd.value=c.schedule?c.schedule.end:5;cfgSchedToggle();cfgMsg.classList.add("hidden");
  cfgState.textContent=c.custom?"Pengaturan khusus"+(c.by?" • diubah oleh "+c.by:"")+(c.at?" • "+fmtDT(c.at):""):"Memakai standar bawaan sistem (belum pernah diubah)";
  cfgRender(c.def)}
 function cfgRender(def){
@@ -2261,16 +2292,67 @@ function cfgSave(){
  const freqs=CFG.freqs.map(f=>({name:f.name.trim(),days:Math.max(0,Math.min(3650,Math.round(Number(f.days)||0)))}));
  if(!freqs.length||freqs.some(f=>!f.name))return cfgProblem("Minimal 1 pilihan frekuensi, dan namanya tidak boleh kosong.");
  const fs=new Set();for(const f of freqs){const k=f.name.toLowerCase();if(fs.has(k))return cfgProblem('Frekuensi ganda: "'+f.name+'"');fs.add(k)}
- const rec={type:CFG.type,items,frequencies:freqs,defaultFreq:cfgDef.value,standard:cfgStd.value.trim(),notes:cfgNotes.value.trim(),updatedBy:me.name,updatedAt:new Date().toISOString()};
+ let schedObj={};
+ if(cfgSchedMode.value==="monthly"){const a=Math.round(Number(cfgSchedStart.value)),b=Math.round(Number(cfgSchedEnd.value));if(!(a>=1&&b<=28&&a<=b))return cfgProblem("Jendela tanggal tidak valid: isi tanggal 1–28 dan tanggal awal tidak boleh melewati batas.");schedObj={mode:"monthly",start:a,end:b}}
+ const rec={type:CFG.type,schedule:schedObj,items,frequencies:freqs,defaultFreq:cfgDef.value,standard:cfgStd.value.trim(),notes:cfgNotes.value.trim(),updatedBy:me.name,updatedAt:new Date().toISOString()};
  DB.templates=DB.templates||[];const ix=DB.templates.findIndex(t=>t.type===CFG.type);if(ix>=0)DB.templates[ix]=rec;else DB.templates.push(rec);
  saveDB();cfgTypeOptions();closeModal("cfgModal");toast("Pengaturan "+CFG.type+" disimpan. Berlaku pada inspeksi berikutnya.")}
 function cfgReset(){
  if(!me||me.role!=="admin")return;if(!confirm('Kembalikan "'+CFG.type+'" ke standar bawaan sistem?'))return;
  DB.templates=DB.templates||[];const ix=DB.templates.findIndex(t=>t.type===CFG.type);
- if(ix>=0){DB.templates[ix]={type:CFG.type,items:[],frequencies:[],defaultFreq:"",standard:"",notes:"",updatedBy:me.name,updatedAt:new Date().toISOString()};saveDB()}
+ if(ix>=0){DB.templates[ix]={type:CFG.type,schedule:{},items:[],frequencies:[],defaultFreq:"",standard:"",notes:"",updatedBy:me.name,updatedAt:new Date().toISOString()};saveDB()}
  cfgLoad();toast("Dikembalikan ke standar bawaan")}
 
-function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
+
+/* ===== JADWAL INSPEKSI RUTIN (bulanan dengan jendela tanggal; diatur admin per jenis equipment) ===== */
+const pad2=n=>String(n).padStart(2,"0");
+function localISO(d){d=d||new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())}
+let SIDX=null;
+function inspByAsset(){const m=new Map();(DB.inspections||[]).forEach(i=>{if(!m.has(i.asset))m.set(i.asset,[]);m.get(i.asset).push(i)});return m}
+function schedOf(type){const t=tplFor(type),s=t&&t.schedule;return s&&s.mode==="monthly"?{start:Math.max(1,Number(s.start)||1),end:Math.min(28,Number(s.end)||5)}:null}
+function schedMonth(a,y,m,idx){
+ const sc=schedOf(a.type);if(!sc)return null;
+ idx=idx||inspByAsset();const today=localISO(),pre=y+"-"+pad2(m+1)+"-",from=pre+pad2(sc.start),dl=pre+pad2(sc.end),last=pre+pad2(new Date(y,m+1,0).getDate());
+ const list=(idx.get(a.id)||[]).filter(i=>String(i.date)>=from&&String(i.date)<=last&&i.approval!=="REJECTED");
+ const ap=list.filter(i=>i.approval==="APPROVED").map(i=>String(i.date)).sort(),pn=list.filter(i=>i.approval==="PENDING").map(i=>String(i.date)).sort();
+ let st;if(ap.length)st=ap[0]>dl?"doneLate":"done";else if(pn.length)st="pending";else st=today<from?"planned":today<=dl?"due":today<=last?"late":"missed";
+ return{sc,from,dl,last,st,left:daysUntil(dl)}}
+function schedNow(a,idx){
+ const n=new Date(),r=schedMonth(a,n.getFullYear(),n.getMonth(),idx);
+ if(r&&(r.st==="done"||r.st==="doneLate")){const nm=new Date(n.getFullYear(),n.getMonth()+1,1);r.next=nm.getFullYear()+"-"+pad2(nm.getMonth()+1)+"-"+pad2(r.sc.end)}
+ return r}
+const SCHED_LBL={planned:["Belum dibuka","info"],due:["Perlu diinspeksi","warn"],late:["Terlambat","bad"],pending:["Menunggu approval","info"],done:["Selesai","ok"],doneLate:["Selesai (terlambat)","warn"],missed:["Terlewat","bad"]};
+const SCHED_CLS={planned:"schedule",due:"soon",late:"late",pending:"find",done:"history",doneLate:"soon",missed:"late"};
+const isDoneSt=st=>st==="done"||st==="doneLate";
+function schedTag(r){const l=SCHED_LBL[r.st];return `<span class="tag ${l[1]}">${l[0]}</span>`}
+function schedText(r){
+ switch(r.st){
+  case"due":return "Batas "+fmtDate(r.dl)+" • "+(r.left===0?"hari ini":r.left+" hari lagi");
+  case"late":return "Lewat batas "+Math.abs(r.left)+" hari (batas "+fmtDate(r.dl)+")";
+  case"planned":return "Dibuka "+fmtDate(r.from)+", batas "+fmtDate(r.dl);
+  case"pending":return "Menunggu keputusan admin";
+  case"done":case"doneLate":return r.next?"Berikutnya batas "+fmtDate(r.next):"Selesai";
+  default:return "Tidak ada inspeksi yang disetujui pada bulan itu"}}
+function schedBadge(a){const r=schedNow(a,SIDX||undefined);return r?`<div style="margin-top:6px;font-size:11px">${schedTag(r)} <span class="muted">${esc(schedText(r))}</span></div>`:""}
+function schedAlerts(){const idx=inspByAsset();return scopedAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r&&(x.r.st==="late"||x.r.st==="due")).sort((x,y)=>(x.r.st==="late"?0:1)-(y.r.st==="late"?0:1)||x.r.left-y.r.left||x.a.id.localeCompare(y.a.id))}
+function schedAlertHtml(x){const late=x.r.st==="late";return `<div class="notice ${late?"danger":"warning"}"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>${esc(x.a.id)} • ${esc(plantName(x.a.plant))}</b><div>${esc(x.a.name||"")} • ${esc(x.a.location||"")}</div><small class="muted">Inspeksi rutin bulanan • ${esc(schedText(x.r))}</small></div>${schedTag(x.r)}</div></div>`}
+function schedSummaryHtml(){const al=schedAlerts();if(!al.length)return"";const late=al.filter(x=>x.r.st==="late").length,due=al.length-late;return `<div class="notice ${late?"danger":"warning"}"><b>Inspeksi rutin bulan ini</b><div style="font-size:12px">${late?late+" asset terlambat":""}${late&&due?" • ":""}${due?due+" asset perlu diinspeksi":""}</div></div>`}
+function schedHero(){const idx=inspByAsset(),rows=scopedAssets().map(a=>schedNow(a,idx)).filter(Boolean);if(!rows.length)return"";return ` • inspeksi rutin ${rows.filter(r=>isDoneSt(r.st)).length}/${rows.length} selesai`}
+function renderInspectionTasks(){
+ const box=document.getElementById("taskPanel");if(!box||!me)return;
+ const idx=inspByAsset(),rows=scopedAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r);
+ if(!rows.length){box.classList.add("hidden");return}
+ box.classList.remove("hidden");
+ const order={late:0,due:1,planned:2,pending:3,doneLate:4,done:5,missed:6};
+ rows.sort((x,y)=>order[x.r.st]-order[y.r.st]||x.a.id.localeCompare(y.a.id));
+ const n=rows.length,d=rows.filter(x=>isDoneSt(x.r.st)).length,p=rows.filter(x=>x.r.st==="pending").length,l=rows.filter(x=>x.r.st==="late").length,todo=n-d-p;
+ taskMonth.textContent=new Date().toLocaleDateString("id-ID",{month:"long",year:"numeric"});
+ taskSummary.innerHTML=`<b>${d}</b> selesai • <b>${p}</b> menunggu approval • <b>${todo}</b> belum${l?` <span class="tag bad">${l} terlambat</span>`:""} <span class="muted">dari ${n} asset terjadwal</span>`;
+ taskBar.innerHTML=`<i style="width:${d*100/n}%;background:#16a34a"></i><i style="width:${p*100/n}%;background:#60a5fa"></i>`;
+ taskList.innerHTML=rows.map(x=>`<div class="tk-row"><div class="grow"><b>${esc(x.a.id)}</b><div class="muted" style="font-size:12px">${esc(x.a.area||"-")} • ${esc(x.a.location||"-")}${me.plant==="ALL"?" • "+esc(plantName(x.a.plant)):""}</div></div><div style="text-align:right">${schedTag(x.r)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(schedText(x.r))}</div></div></div>`).join("")}
+function cfgSchedToggle(){cfgSchedBox.classList.toggle("hidden",cfgSchedMode.value!=="monthly")}
+
+function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
 
 function bootHide(){bootLoader.classList.remove("show")}
 function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".spinner").style.display="none"}
