@@ -188,6 +188,7 @@ th,td{padding:9px 8px}
 .as-list{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:10px}
 .as-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer}.as-row:last-child{border-bottom:0}.as-row.dis{opacity:.45;cursor:not-allowed}.as-row input{width:18px;height:18px;flex:0 0 auto}.as-row .grow{min-width:0;flex:1}
 .as-prog{height:6px;border-radius:99px;background:#e8eef5;overflow:hidden;min-width:70px;margin-top:4px;display:flex}.as-prog i{display:block;height:100%}
+.tk-row.adm{flex-wrap:wrap;gap:8px}.tk-r{text-align:right;flex:0 0 auto}.tk-asg{width:190px;max-width:100%;padding:7px 9px;font-size:12px}@media(max-width:700px){.tk-row.adm .tk-r{text-align:left;width:100%}.tk-asg{width:100%}}
 </style>
 </head>
 <body>
@@ -269,7 +270,7 @@ th,td{padding:9px 8px}
 
   <section class="section" id="inventory">
    <div class="panel"><div class="panel-head"><h3>Inventory Safety Equipment</h3><button id="addAssetBtn" class="btn primary" onclick="openAssetModal()">＋ Tambah Asset</button></div>
-    <div class="toolbar"><input id="assetSearch" class="input" placeholder="Cari Asset ID, alat, area, lokasi..." oninput="renderInventory()"><select id="typeFilter" class="select" onchange="renderInventory()"><option value="">Semua Jenis</option></select><select id="areaFilter" class="select" onchange="renderInventory()"><option value="">Semua Area</option></select><select id="statusFilter" class="select" onchange="renderInventory()"><option value="">Semua Status</option><option>NORMAL - USE</option><option>NORMAL - SPARE</option><option>NG</option><option>Due Soon</option><option>Expired</option></select><select id="asgFilter" class="select hidden" onchange="renderInventory()"></select></div><div id="assetCards" class="cards"></div>
+    <div class="toolbar"><input id="assetSearch" class="input" placeholder="Cari Asset ID, alat, area, lokasi..." oninput="renderInventory()"><select id="typeFilter" class="select" onchange="renderInventory()"><option value="">Semua Jenis</option></select><select id="areaFilter" class="select" onchange="renderInventory()"><option value="">Semua Area</option></select><select id="statusFilter" class="select" onchange="renderInventory()"><option value="">Semua Status</option><option>NORMAL - USE</option><option>NORMAL - SPARE</option><option>NG</option><option>Due Soon</option><option>Expired</option></select></div><div id="assetCards" class="cards"></div>
    </div>
   </section>
 
@@ -284,7 +285,7 @@ th,td{padding:9px 8px}
      <div id="inspectionFooter" class="hidden" style="margin-top:14px"><div class="formgrid"><div><label>Frekuensi</label><select id="frequency" class="select"><option>Daily</option><option>Monthly</option><option>Annual</option></select></div><div><label>Foto kondisi / temuan</label><input id="inspPhoto" class="input" type="file" accept="image/*"></div><div class="full"><label>Remark</label><textarea id="inspRemark" rows="3" placeholder="Catatan inspeksi..."></textarea></div></div><div id="inspMsg" class="notice danger hidden" style="margin-top:12px"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="resetChecklist()">Reset</button><button class="btn success" onclick="saveInspection()">Simpan & Kirim Approval</button></div></div>
     </div>
    </div>
-     <div class="panel hidden" id="taskPanel" style="margin-top:18px"><div class="panel-head"><div><h3>Tugas Inspeksi Rutin</h3><div class="muted" id="taskMonth"></div></div></div><div id="taskSummary"></div><div class="tk-bar" id="taskBar"></div><div class="tk-list" id="taskList"></div><div class="muted" style="font-size:12px;margin-top:8px">Daftar ini hanya penanda. Inspeksi tetap dimulai dengan scan QR di asset.</div></div>
+     <div class="panel hidden" id="taskPanel" style="margin-top:18px"><div class="panel-head"><div><h3 id="taskTitle">Tugas Inspeksi Rutin</h3><div class="muted" id="taskMonth"></div></div></div><div id="taskSummary"></div><div class="tk-bar" id="taskBar"></div><div class="job-tools hidden" id="taskTools"><select id="tkInsp" class="select" onchange="TKN=60;renderInspectionTasks()"></select><select id="tkSt" class="select" onchange="TKN=60;renderInspectionTasks()"><option value="">Semua status</option><option value="todo">Belum diinspeksi</option><option value="late">Terlambat</option><option value="pending">Menunggu approval</option><option value="done">Selesai</option><option value="ng">Status NG</option></select><input id="tkQ" class="input" placeholder="Cari ID / area / lokasi…" oninput="TKN=60;renderInspectionTasks()"></div><div class="tk-list" id="taskList"></div><div class="muted" style="font-size:12px;margin-top:8px">Daftar ini hanya penanda. Inspeksi tetap dimulai dengan scan QR di asset.</div></div>
      <div class="panel hidden" id="assignPanel" style="margin-top:18px"><div class="panel-head"><div><h3>Penugasan Inspector</h3><div class="muted">Pembagian asset ke inspector dan kemajuan bulan ini</div></div><div class="u-actions"><button class="btn primary small" onclick="openAssign()">👤 Atur Penugasan</button><button class="btn soft small" onclick="exportJobCSV()">⬇ Job List CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>Inspector</th><th>Plant</th><th>Asset</th><th>Selesai</th><th>Menunggu</th><th>Belum</th><th>Terlambat</th><th>NG</th><th></th></tr></thead><tbody id="assignTable"></tbody></table></div><div class="muted" style="font-size:12px;margin-top:8px;line-height:1.5">"Belum" mencakup asset yang belum waktunya diinspeksi. Asset tanpa penanggung jawab (atau milik inspector nonaktif) dihitung pada baris "Belum ditugaskan".</div></div>
   </section>
 
@@ -360,7 +361,7 @@ th,td{padding:9px 8px}
 </div>
 
 <div class="modal" id="assetModal"><div class="modalbox"><div class="modalhead"><h3 id="assetModalTitle">Tambah Safety Equipment</h3><button class="close" onclick="closeModal('assetModal')">×</button></div><div class="formgrid">
- <div><label>Asset ID</label><input id="aId" class="input" placeholder="APAR-P1-001"></div><div><label>Plant</label><select id="aPlant" class="select" onchange="populateAreaOptions();populateAssignOptions()"></select></div><div><label>Area / Departemen</label><select id="aArea" class="select"></select></div><div><label>Jenis Equipment</label><select id="aType" class="select"><option>APAR</option><option>APAR Preasure Gauge</option><option>Hydrant</option><option>Eyewash</option><option>Emergency Lamp</option><option>First Aid Kit</option><option>Gas Detector</option><option>SCBA</option><option>Fire Alarm</option><option>Other</option></select></div><div><label>Nama / Deskripsi</label><input id="aName" class="input" placeholder="APAR ABC 6 Kg" list="dlName"><datalist id="dlName"><option value="Dry Chemical"><option value="GAS"></datalist></div><div><label>Media / Tipe</label><input id="aMedia" class="input" placeholder="Powder / CO2" list="dlMedia"><datalist id="dlMedia"><option value="Powder"><option value="Co2"></datalist></div><div><label>Kapasitas</label><input id="aCapacity" class="input" placeholder="6 Kg"></div><div><label>Detail Lokasi</label><input id="aLocation" class="input" placeholder="Contoh: dekat pintu masuk / Line 1"></div><div><label>Next Due</label><input id="aDue" class="input" type="date"></div><div><label>Inspector Penanggung Jawab</label><select id="aAssign" class="select"></select></div><div><label>Status Kondisi</label><select id="aStatus" class="select"><option value="NORMAL - USE">NORMAL - USE (terpasang)</option><option value="NORMAL - SPARE">NORMAL - SPARE (cadangan)</option><option value="NG">NG (tidak layak)</option></select><small class="muted" id="aStatusNote" style="display:block;margin-top:5px;line-height:1.45">Due Soon / Expired ditentukan otomatis dari Next Due.</small></div><div><label>Foto Asset <span style="color:var(--red)">*</span></label><input id="aPhoto" class="input" type="file" accept="image/*" onchange="previewAssetPhoto()"><small class="muted">Wajib saat menambah asset. Saat edit, pilih foto baru hanya jika ingin mengganti.</small></div><div class="full"><img id="assetPhotoPreview" class="photo-preview" alt="Preview Foto Asset"></div><div class="full" id="assetIdEditNote" style="display:none;font-size:11px;color:var(--muted)">Asset ID dikunci saat mode edit agar riwayat inspeksi, finding, dan QR tetap konsisten.</div><div class="full" style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="closeModal('assetModal')">Batal</button><button id="assetSaveBtn" class="btn primary" onclick="saveAsset()">Simpan</button></div>
+ <div><label>Asset ID</label><input id="aId" class="input" placeholder="APAR-P1-001"></div><div><label>Plant</label><select id="aPlant" class="select" onchange="populateAreaOptions()"></select></div><div><label>Area / Departemen</label><select id="aArea" class="select"></select></div><div><label>Jenis Equipment</label><select id="aType" class="select"><option>APAR</option><option>APAR Preasure Gauge</option><option>Hydrant</option><option>Eyewash</option><option>Emergency Lamp</option><option>First Aid Kit</option><option>Gas Detector</option><option>SCBA</option><option>Fire Alarm</option><option>Other</option></select></div><div><label>Nama / Deskripsi</label><input id="aName" class="input" placeholder="APAR ABC 6 Kg" list="dlName"><datalist id="dlName"><option value="Dry Chemical"><option value="GAS"></datalist></div><div><label>Media / Tipe</label><input id="aMedia" class="input" placeholder="Powder / CO2" list="dlMedia"><datalist id="dlMedia"><option value="Powder"><option value="Co2"></datalist></div><div><label>Kapasitas</label><input id="aCapacity" class="input" placeholder="6 Kg"></div><div><label>Detail Lokasi</label><input id="aLocation" class="input" placeholder="Contoh: dekat pintu masuk / Line 1"></div><div><label>Next Due</label><input id="aDue" class="input" type="date"></div><div><label>Status Kondisi</label><select id="aStatus" class="select"><option value="NORMAL - USE">NORMAL - USE (terpasang)</option><option value="NORMAL - SPARE">NORMAL - SPARE (cadangan)</option><option value="NG">NG (tidak layak)</option></select><small class="muted" id="aStatusNote" style="display:block;margin-top:5px;line-height:1.45">Due Soon / Expired ditentukan otomatis dari Next Due.</small></div><div><label>Foto Asset <span style="color:var(--red)">*</span></label><input id="aPhoto" class="input" type="file" accept="image/*" onchange="previewAssetPhoto()"><small class="muted">Wajib saat menambah asset. Saat edit, pilih foto baru hanya jika ingin mengganti.</small></div><div class="full"><img id="assetPhotoPreview" class="photo-preview" alt="Preview Foto Asset"></div><div class="full" id="assetIdEditNote" style="display:none;font-size:11px;color:var(--muted)">Asset ID dikunci saat mode edit agar riwayat inspeksi, finding, dan QR tetap konsisten.</div><div class="full" style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="closeModal('assetModal')">Batal</button><button id="assetSaveBtn" class="btn primary" onclick="saveAsset()">Simpan</button></div>
 </div></div></div>
 
 <div class="modal" id="qrModal"><div class="modalbox" style="max-width:450px"><div class="modalhead"><h3>QR Asset</h3><button class="close" onclick="closeModal('qrModal')">×</button></div><div class="qr-area"><h2 id="qrAssetId"></h2><canvas class="qr" id="qrCanvas"></canvas><p class="muted" id="qrPlant"></p><button class="btn primary" onclick="printQR()">🖨 Cetak Label QR</button></div></div></div>
@@ -1938,9 +1939,8 @@ function renderInventory(){
  typeFilter.innerHTML='<option value="">Semua Jenis</option>'+types.map(t=>`<option>${t}</option>`).join("");typeFilter.value=oldType;
  let areas=[...new Set(aa.map(a=>a.area).filter(Boolean))].sort(),oldArea=af;
  areaFilter.innerHTML='<option value="">Semua Area</option>'+areas.map(x=>`<option>${x}</option>`).join("");areaFilter.value=oldArea;
- renderAsgFilter();const gf=asgFilter.value;
- let rows=aa.filter(a=>(!gf||(gf==='__none'?!a.assignedTo:a.assignedTo===gf))&&(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="NORMAL - USE"?(a.status==="NORMAL - USE"||a.status==="Normal"):sf==="NG"?(a.status==="NG"||a.status==="Rusak"):a.status===sf)));
- assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small>${a.swapNote?`<div class="swap-note">⇄ ${esc(a.swapNote)}</div>`:""}${asgLine(a)}<div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`+(!isSpareAsset(a)?`<button class="btn soft small" onclick="openSwap('${a.id}')">⇄ Ganti Spare</button>`:""):""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
+ let rows=aa.filter(a=>(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="NORMAL - USE"?(a.status==="NORMAL - USE"||a.status==="Normal"):sf==="NG"?(a.status==="NG"||a.status==="Rusak"):a.status===sf)));
+ assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small>${a.swapNote?`<div class="swap-note">⇄ ${esc(a.swapNote)}</div>`:""}<div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`+(!isSpareAsset(a)?`<button class="btn soft small" onclick="openSwap('${a.id}')">⇄ Ganti Spare</button>`:""):""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
 }
 function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat menambah asset");
  editingAssetId=null;
@@ -1950,7 +1950,7 @@ function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN ya
  aStatus.value="NORMAL - USE";aStatusNote.textContent="Due Soon / Expired ditentukan otomatis dari Next Due. Pilih NORMAL - SPARE untuk tabung cadangan.";
  aId.readOnly=false;assetIdEditNote.style.display="none";
  if(me.plant!=="ALL")aPlant.value=me.plant;
- populateAreaOptions();populateAssignOptions("");
+ populateAreaOptions();
  assetModal.classList.add("open")
 }
 function editAsset(id){
@@ -1958,7 +1958,7 @@ function editAsset(id){
  let a=DB.assets.find(x=>x.id===id);if(!a||!allowedPlant(a.plant))return;
  editingAssetId=id;assetModalTitle.textContent="Edit Safety Equipment";assetSaveBtn.textContent="Simpan Perubahan";
  aId.value=a.id;aId.readOnly=true;assetIdEditNote.style.display="block";
- aPlant.value=a.plant;populateAreaOptions(a.area);populateAssignOptions(a.assignedTo);
+ aPlant.value=a.plant;populateAreaOptions(a.area);
  aType.value=a.type;aStatus.value=baseOf(a);aStatusNote.textContent=(a.status==="Due Soon"||a.status==="Expired")?"Saat ini otomatis berstatus "+a.status+" karena Next Due. Pilihan di atas adalah kondisi dasarnya.":"Due Soon / Expired ditentukan otomatis dari Next Due.";aName.value=a.name;aMedia.value=a.media||"";aCapacity.value=a.capacity||"";aLocation.value=a.location||"";aDue.value=a.due||"";
  aPhoto.value="";assetPhotoPreview.src=a.photo||"";assetPhotoPreview.style.display=a.photo?"block":"none";
  assetModal.classList.add("open")
@@ -1974,7 +1974,7 @@ async function saveAsset(){if(!me||me.role!=="admin")return toast("Hanya ADMIN y
  let newPhoto=await imageToSmallData(aPhoto,900);
  if(editingAssetId){
    let a=DB.assets.find(x=>x.id===editingAssetId);if(!a)return;
-   a.plant=plant;a.area=area;a.type=aType.value;a.name=aName.value.trim()||aType.value;a.media=aMedia.value.trim()||"-";a.capacity=aCapacity.value.trim()||"-";a.location=aLocation.value.trim()||"-";a.due=aDue.value;a.assignedTo=aAssign.value||"";
+   a.plant=plant;a.area=area;a.type=aType.value;a.name=aName.value.trim()||aType.value;a.media=aMedia.value.trim()||"-";a.capacity=aCapacity.value.trim()||"-";a.location=aLocation.value.trim()||"-";a.due=aDue.value;
    if(newPhoto)a.photo=newPhoto;
    const chosen=aStatus.value,curBase=baseOf(a);
    if(chosen!==curBase){
@@ -1985,7 +1985,7 @@ async function saveAsset(){if(!me||me.role!=="admin")return toast("Hanya ADMIN y
  }
  if(DB.assets.some(a=>a.id===id))return toast("Asset ID sudah ada");
  if(!newPhoto)return toast("Foto asset wajib ditambahkan");
- DB.assets.unshift({id,plant,area,type:aType.value,name:aName.value.trim()||aType.value,media:aMedia.value.trim()||"-",capacity:aCapacity.value.trim()||"-",location:aLocation.value.trim()||"-",due:aDue.value,status:aStatus.value,baseStatus:"",assignedTo:aAssign.value||"",photo:newPhoto});
+ DB.assets.unshift({id,plant,area,type:aType.value,name:aName.value.trim()||aType.value,media:aMedia.value.trim()||"-",capacity:aCapacity.value.trim()||"-",location:aLocation.value.trim()||"-",due:aDue.value,status:aStatus.value,baseStatus:"",photo:newPhoto});
  saveDB();closeModal("assetModal");renderAll();toast("Asset tersimpan. QR Code dibuat otomatis.");showQR(id)
 }
 function drawQR(text,canvas){const qr=new QRCodeCore(0,QRErrorCorrectLevel.M);qr.addData(text);qr.make();const count=qr.getModuleCount(),quiet=4,size=8,total=(count+quiet*2)*size;canvas.width=canvas.height=total;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,total,total);ctx.fillStyle="#000";for(let r=0;r<count;r++)for(let c=0;c<count;c++)if(qr.isDark(r,c))ctx.fillRect((c+quiet)*size,(r+quiet)*size,size,size)}
@@ -2326,6 +2326,37 @@ async function doAssign(){
   toast(sel==="__clear"?r.changed+" asset dilepas dari penugasan":r.changed+" asset ditugaskan ke "+asgName(sel))
  }catch(e){ASG.busy=false;asUpdateBtn();toast(e.message||"Gagal menyimpan penugasan")}}
 
+let TKN=60;
+function renderAdminTasks(){
+ const box=document.getElementById("taskPanel");
+ const as=scopedAssets();
+ if(!as.length){box.classList.add("hidden");return}
+ box.classList.remove("hidden");taskTitle.textContent="Tugas Inspeksi & Penugasan";taskTools.classList.remove("hidden");
+ const idx=inspByAsset(),ins=(DB.users||[]).filter(u=>u.role==="inspector");
+ const old=tkInsp.value;tkInsp.innerHTML='<option value="">Semua inspector</option><option value="__none">Belum ditugaskan</option>'+ins.map(u=>`<option value="${esc(u.username)}">${esc(u.name)}${u.active?"":" (nonaktif)"}</option>`).join("");
+ tkInsp.value=[...tkInsp.options].some(o=>o.value===old)?old:"";
+ const all=as.map(a=>({a,j:jobState(a,idx)})),n=all.length,c={done:0,pending:0,todo:0,late:0,ng:0};all.forEach(x=>c[x.j.k]++);
+ const un=as.filter(a=>!a.assignedTo).length;
+ taskMonth.textContent=new Date().toLocaleDateString("id-ID",{month:"long",year:"numeric"})+" • atur penanggung jawab tiap item langsung di daftar ini";
+ taskSummary.innerHTML=`<b>${c.done}</b> selesai • <b>${c.pending}</b> menunggu approval • <b>${c.todo+c.late}</b> belum${c.late?` <span class="tag bad">${c.late} terlambat</span>`:""} • <b>${un}</b> belum ditugaskan <span class="muted">dari ${n} asset</span>`;
+ taskBar.innerHTML=`<i style="width:${c.done*100/n}%;background:#16a34a"></i><i style="width:${c.pending*100/n}%;background:#60a5fa"></i>`;
+ const fi=tkInsp.value,fs=tkSt.value,q=(tkQ.value||"").toLowerCase().trim();
+ const rows=all.filter(x=>(!fi||(fi==="__none"?!x.a.assignedTo:x.a.assignedTo===fi))&&(!fs||(fs==="todo"?(x.j.k==="todo"||x.j.k==="late"):x.j.k===fs))&&(!q||[x.a.id,x.a.name,x.a.area,x.a.location,x.a.type].join(" ").toLowerCase().includes(q)));
+ const ord={late:0,todo:1,pending:2,done:3,ng:4};
+ rows.sort((x,y)=>ord[x.j.k]-ord[y.j.k]||x.a.id.localeCompare(y.a.id));
+ const keep=taskList.scrollTop,shown=rows.slice(0,TKN);
+ taskList.innerHTML=shown.map(x=>{const a=x.a,cands=activeInspectors(a.plant),cur=a.assignedTo||"";
+  let o='<option value="">— Belum ditugaskan —</option>'+cands.map(u=>`<option value="${esc(u.username)}">${esc(u.name)}</option>`).join("");
+  if(cur&&!cands.some(u=>u.username===cur))o+=`<option value="${esc(cur)}">${esc(asgName(cur))} (tidak aktif / bukan plant ini)</option>`;
+  return `<div class="tk-row adm"><div class="grow"><b>${esc(a.id)}</b> <small class="muted">${esc(a.type)}</small><div class="muted" style="font-size:12px">${esc(a.area||"-")} • ${esc(a.location||"-")} • ${esc(plantName(a.plant))}</div></div><div class="tk-r"><select class="select tk-asg" onchange="setAssignee('${esc(a.id)}',this.value)">${o.replace('value="'+esc(cur)+'"','value="'+esc(cur)+'" selected')}</select><div style="margin-top:4px"><span class="tag ${x.j.cls}">${x.j.lbl}</span></div></div></div>`}).join("")||'<div class="muted" style="padding:14px">Tidak ada asset sesuai filter.</div>';
+ if(rows.length>TKN)taskList.insertAdjacentHTML("beforeend",`<div style="padding:12px;text-align:center"><button class="btn soft small" onclick="TKN+=100;renderInspectionTasks()">Tampilkan lebih banyak (${rows.length-TKN} lagi)</button></div>`);
+ taskList.scrollTop=keep}
+let asgBusy=false;
+async function setAssignee(id,to){
+ if(asgBusy)return;asgBusy=true;
+ try{await waitSync();await api("assignAssets",{ids:[id],to});const a=DB.assets.find(x=>x.id===id);if(a)a.assignedTo=to;try{await pullAll()}catch(e){}toast(to?id+" ditugaskan ke "+asgName(to):"Penugasan "+id+" dilepas")}
+ catch(e){toast(e.message||"Gagal menyimpan penugasan")}
+ asgBusy=false;renderAll()}
 /* ===== AKUN & PASSWORD ===== */
 const fmtWhen=x=>{if(!x)return"-";const d=new Date(x);return isNaN(d)?String(x):d.toLocaleString("id-ID",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
 function uRoleChange(){const adm=uRole.value==="admin";uPlant.disabled=adm;uPlantWrap.style.opacity=adm?".45":"1"}
@@ -2741,6 +2772,7 @@ function schedSummaryHtml(){const al=schedAlerts();if(!al.length)return"";const 
 function schedHero(){const idx=inspByAsset(),rows=focusAssets().map(a=>schedNow(a,idx)).filter(Boolean);if(!rows.length)return"";return ` • inspeksi rutin ${rows.filter(r=>isDoneSt(r.st)).length}/${rows.length} selesai`}
 function renderInspectionTasks(){
  const box=document.getElementById("taskPanel");if(!box||!me)return;
+ if(me.role==="admin")return renderAdminTasks();
  if(hasJobs()){box.classList.add("hidden");return}
  const idx=inspByAsset(),rows=scopedAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r);
  if(!rows.length){box.classList.add("hidden");return}
