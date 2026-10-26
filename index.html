@@ -177,6 +177,17 @@ th,td{padding:9px 8px}
 .swap-note{margin-top:6px;font-size:11px;font-weight:700;color:#8a5a00;background:#fff6e0;border:1px solid #ffe0a0;border-radius:8px;padding:5px 8px;line-height:1.4}
 .sw-box{border:1px solid var(--border);border-radius:12px;padding:11px 13px;background:#fafcff;font-size:13px;line-height:1.55;margin-top:12px}.sw-box.pre{background:#f2f8ff;border-color:#cfe4f7}
 .sw-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.sw-row{grid-template-columns:1fr}}
+.job-area{border:1px solid var(--border);border-radius:13px;margin-top:10px;overflow:hidden;background:#fff}
+.job-ah{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:11px 13px;background:#f4f8fc;cursor:pointer;user-select:none}.job-ah b{font-size:14px}.job-ah .car{display:inline-block;transition:.15s;margin-right:6px;color:var(--muted)}.job-area.open .job-ah .car{transform:rotate(90deg)}
+.job-body{display:none}.job-area.open .job-body{display:block}
+.job-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 13px;border-top:1px solid var(--border)}.job-row .grow{min-width:0;flex:1}.job-row .rt{text-align:right;flex:0 0 auto}
+.job-tools{display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap}.job-tools .select{flex:1 1 170px;min-width:0}.job-tools .input{flex:2 1 200px;min-width:0}
+.mini{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:99px;background:#eef3f8;color:#51647a;margin-left:4px}.mini.bad{background:#fdeaea;color:#b42626}.mini.ok{background:#e3f6ea;color:#17803f}.mini.warn{background:#fff3d6;color:#8a5a00}.mini.info{background:#e5f1fe;color:#0e6fd3}
+.asg-line{margin-top:6px;font-size:12px;font-weight:700;color:#35506b}.asg-line.none{color:var(--muted);font-weight:600}.asg-line.warn{color:#b45309}
+.as-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.as-filters .full{grid-column:1/-1}@media(max-width:700px){.as-filters{grid-template-columns:1fr 1fr}}
+.as-list{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:10px}
+.as-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer}.as-row:last-child{border-bottom:0}.as-row.dis{opacity:.45;cursor:not-allowed}.as-row input{width:18px;height:18px;flex:0 0 auto}.as-row .grow{min-width:0;flex:1}
+.as-prog{height:6px;border-radius:99px;background:#e8eef5;overflow:hidden;min-width:70px;margin-top:4px;display:flex}.as-prog i{display:block;height:100%}
 </style>
 </head>
 <body>
@@ -258,12 +269,15 @@ th,td{padding:9px 8px}
 
   <section class="section" id="inventory">
    <div class="panel"><div class="panel-head"><h3>Inventory Safety Equipment</h3><button id="addAssetBtn" class="btn primary" onclick="openAssetModal()">＋ Tambah Asset</button></div>
-    <div class="toolbar"><input id="assetSearch" class="input" placeholder="Cari Asset ID, alat, area, lokasi..." oninput="renderInventory()"><select id="typeFilter" class="select" onchange="renderInventory()"><option value="">Semua Jenis</option></select><select id="areaFilter" class="select" onchange="renderInventory()"><option value="">Semua Area</option></select><select id="statusFilter" class="select" onchange="renderInventory()"><option value="">Semua Status</option><option>NORMAL - USE</option><option>NORMAL - SPARE</option><option>NG</option><option>Due Soon</option><option>Expired</option></select></div><div id="assetCards" class="cards"></div>
+    <div class="toolbar"><input id="assetSearch" class="input" placeholder="Cari Asset ID, alat, area, lokasi..." oninput="renderInventory()"><select id="typeFilter" class="select" onchange="renderInventory()"><option value="">Semua Jenis</option></select><select id="areaFilter" class="select" onchange="renderInventory()"><option value="">Semua Area</option></select><select id="statusFilter" class="select" onchange="renderInventory()"><option value="">Semua Status</option><option>NORMAL - USE</option><option>NORMAL - SPARE</option><option>NG</option><option>Due Soon</option><option>Expired</option></select><select id="asgFilter" class="select hidden" onchange="renderInventory()"></select></div><div id="assetCards" class="cards"></div>
    </div>
   </section>
 
   <section class="section" id="inspection">
    <div id="cfgBar" class="hidden" style="justify-content:flex-end;margin-bottom:10px;display:flex"><button class="btn soft" onclick="openCfgModal()">⚙ Pengaturan Checklist & Frekuensi (Admin)</button></div>
+   <div class="panel hidden" id="jobPanel" style="margin-bottom:18px"><div class="panel-head"><div><h3>Job List Saya</h3><div class="muted" id="jobSub"></div></div></div><div id="jobSummary"></div><div class="tk-bar" id="jobBar"></div>
+    <div class="job-tools"><select id="jobFilter" class="select" onchange="renderJobList()"><option value="">Semua status</option><option value="todo">Belum diinspeksi</option><option value="late">Terlambat</option><option value="pending">Menunggu approval</option><option value="done">Selesai</option><option value="ng">Status NG</option></select><input id="jobSearch" class="input" placeholder="Cari ID / lokasi…" oninput="renderJobList()"></div>
+    <div id="jobList"></div><div class="muted" style="font-size:12px;margin-top:10px;line-height:1.5">Job list adalah penanda tanggung jawab Anda. Asset lain di plant Anda tetap dapat diinspeksi dengan scan QR (misalnya saat menggantikan rekan).</div></div>
    <div class="check-grid">
     <div class="panel"><div class="panel-head"><h3>Scan QR Equipment</h3></div><div class="locked-note"><b>Wajib scan QR terlebih dahulu.</b><br>Checklist hanya dapat dibuka setelah QR asset berhasil diverifikasi.</div><button class="btn primary" style="width:100%" onclick="openScanModal()">▣ Scan QR untuk Mulai Inspeksi</button><div style="margin-top:14px"><label>Asset terverifikasi</label><div id="verifiedAssetBox" class="muted">Belum ada asset yang diverifikasi.</div></div></div>
     <div class="panel"><div class="panel-head"><div><h3 id="inspTitle">Checklist Inspeksi</h3><div class="muted" id="inspMeta">Pilih equipment terlebih dahulu</div></div><span class="tag info" id="inspStatus">Belum dipilih</span></div><div id="checklistArea" class="muted">Checklist akan tampil di sini.</div>
@@ -271,6 +285,7 @@ th,td{padding:9px 8px}
     </div>
    </div>
      <div class="panel hidden" id="taskPanel" style="margin-top:18px"><div class="panel-head"><div><h3>Tugas Inspeksi Rutin</h3><div class="muted" id="taskMonth"></div></div></div><div id="taskSummary"></div><div class="tk-bar" id="taskBar"></div><div class="tk-list" id="taskList"></div><div class="muted" style="font-size:12px;margin-top:8px">Daftar ini hanya penanda. Inspeksi tetap dimulai dengan scan QR di asset.</div></div>
+     <div class="panel hidden" id="assignPanel" style="margin-top:18px"><div class="panel-head"><div><h3>Penugasan Inspector</h3><div class="muted">Pembagian asset ke inspector dan kemajuan bulan ini</div></div><div class="u-actions"><button class="btn primary small" onclick="openAssign()">👤 Atur Penugasan</button><button class="btn soft small" onclick="exportJobCSV()">⬇ Job List CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>Inspector</th><th>Plant</th><th>Asset</th><th>Selesai</th><th>Menunggu</th><th>Belum</th><th>Terlambat</th><th>NG</th><th></th></tr></thead><tbody id="assignTable"></tbody></table></div><div class="muted" style="font-size:12px;margin-top:8px;line-height:1.5">"Belum" mencakup asset yang belum waktunya diinspeksi. Asset tanpa penanggung jawab (atau milik inspector nonaktif) dihitung pada baris "Belum ditugaskan".</div></div>
   </section>
 
 
@@ -345,7 +360,7 @@ th,td{padding:9px 8px}
 </div>
 
 <div class="modal" id="assetModal"><div class="modalbox"><div class="modalhead"><h3 id="assetModalTitle">Tambah Safety Equipment</h3><button class="close" onclick="closeModal('assetModal')">×</button></div><div class="formgrid">
- <div><label>Asset ID</label><input id="aId" class="input" placeholder="APAR-P1-001"></div><div><label>Plant</label><select id="aPlant" class="select" onchange="populateAreaOptions()"></select></div><div><label>Area / Departemen</label><select id="aArea" class="select"></select></div><div><label>Jenis Equipment</label><select id="aType" class="select"><option>APAR</option><option>APAR Preasure Gauge</option><option>Hydrant</option><option>Eyewash</option><option>Emergency Lamp</option><option>First Aid Kit</option><option>Gas Detector</option><option>SCBA</option><option>Fire Alarm</option><option>Other</option></select></div><div><label>Nama / Deskripsi</label><input id="aName" class="input" placeholder="APAR ABC 6 Kg" list="dlName"><datalist id="dlName"><option value="Dry Chemical"><option value="GAS"></datalist></div><div><label>Media / Tipe</label><input id="aMedia" class="input" placeholder="Powder / CO2" list="dlMedia"><datalist id="dlMedia"><option value="Powder"><option value="Co2"></datalist></div><div><label>Kapasitas</label><input id="aCapacity" class="input" placeholder="6 Kg"></div><div><label>Detail Lokasi</label><input id="aLocation" class="input" placeholder="Contoh: dekat pintu masuk / Line 1"></div><div><label>Next Due</label><input id="aDue" class="input" type="date"></div><div><label>Status Kondisi</label><select id="aStatus" class="select"><option value="NORMAL - USE">NORMAL - USE (terpasang)</option><option value="NORMAL - SPARE">NORMAL - SPARE (cadangan)</option><option value="NG">NG (tidak layak)</option></select><small class="muted" id="aStatusNote" style="display:block;margin-top:5px;line-height:1.45">Due Soon / Expired ditentukan otomatis dari Next Due.</small></div><div><label>Foto Asset <span style="color:var(--red)">*</span></label><input id="aPhoto" class="input" type="file" accept="image/*" onchange="previewAssetPhoto()"><small class="muted">Wajib saat menambah asset. Saat edit, pilih foto baru hanya jika ingin mengganti.</small></div><div class="full"><img id="assetPhotoPreview" class="photo-preview" alt="Preview Foto Asset"></div><div class="full" id="assetIdEditNote" style="display:none;font-size:11px;color:var(--muted)">Asset ID dikunci saat mode edit agar riwayat inspeksi, finding, dan QR tetap konsisten.</div><div class="full" style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="closeModal('assetModal')">Batal</button><button id="assetSaveBtn" class="btn primary" onclick="saveAsset()">Simpan</button></div>
+ <div><label>Asset ID</label><input id="aId" class="input" placeholder="APAR-P1-001"></div><div><label>Plant</label><select id="aPlant" class="select" onchange="populateAreaOptions();populateAssignOptions()"></select></div><div><label>Area / Departemen</label><select id="aArea" class="select"></select></div><div><label>Jenis Equipment</label><select id="aType" class="select"><option>APAR</option><option>APAR Preasure Gauge</option><option>Hydrant</option><option>Eyewash</option><option>Emergency Lamp</option><option>First Aid Kit</option><option>Gas Detector</option><option>SCBA</option><option>Fire Alarm</option><option>Other</option></select></div><div><label>Nama / Deskripsi</label><input id="aName" class="input" placeholder="APAR ABC 6 Kg" list="dlName"><datalist id="dlName"><option value="Dry Chemical"><option value="GAS"></datalist></div><div><label>Media / Tipe</label><input id="aMedia" class="input" placeholder="Powder / CO2" list="dlMedia"><datalist id="dlMedia"><option value="Powder"><option value="Co2"></datalist></div><div><label>Kapasitas</label><input id="aCapacity" class="input" placeholder="6 Kg"></div><div><label>Detail Lokasi</label><input id="aLocation" class="input" placeholder="Contoh: dekat pintu masuk / Line 1"></div><div><label>Next Due</label><input id="aDue" class="input" type="date"></div><div><label>Inspector Penanggung Jawab</label><select id="aAssign" class="select"></select></div><div><label>Status Kondisi</label><select id="aStatus" class="select"><option value="NORMAL - USE">NORMAL - USE (terpasang)</option><option value="NORMAL - SPARE">NORMAL - SPARE (cadangan)</option><option value="NG">NG (tidak layak)</option></select><small class="muted" id="aStatusNote" style="display:block;margin-top:5px;line-height:1.45">Due Soon / Expired ditentukan otomatis dari Next Due.</small></div><div><label>Foto Asset <span style="color:var(--red)">*</span></label><input id="aPhoto" class="input" type="file" accept="image/*" onchange="previewAssetPhoto()"><small class="muted">Wajib saat menambah asset. Saat edit, pilih foto baru hanya jika ingin mengganti.</small></div><div class="full"><img id="assetPhotoPreview" class="photo-preview" alt="Preview Foto Asset"></div><div class="full" id="assetIdEditNote" style="display:none;font-size:11px;color:var(--muted)">Asset ID dikunci saat mode edit agar riwayat inspeksi, finding, dan QR tetap konsisten.</div><div class="full" style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="closeModal('assetModal')">Batal</button><button id="assetSaveBtn" class="btn primary" onclick="saveAsset()">Simpan</button></div>
 </div></div></div>
 
 <div class="modal" id="qrModal"><div class="modalbox" style="max-width:450px"><div class="modalhead"><h3>QR Asset</h3><button class="close" onclick="closeModal('qrModal')">×</button></div><div class="qr-area"><h2 id="qrAssetId"></h2><canvas class="qr" id="qrCanvas"></canvas><p class="muted" id="qrPlant"></p><button class="btn primary" onclick="printQR()">🖨 Cetak Label QR</button></div></div></div>
@@ -432,6 +447,20 @@ th,td{padding:9px 8px}
   <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary" style="flex:1" id="swGo" onclick="doSwap()">⇄ Ganti Sekarang</button><button class="btn" onclick="closeModal('swapModal')">Batal</button></div>
  </div>
  <div id="swDone" class="hidden"></div>
+</div></div>
+<div class="modal" id="assignModal"><div class="modalbox" style="max-width:820px"><div class="modalhead"><h3>Atur Penugasan Inspector</h3><button class="close" onclick="closeModal('assignModal')">×</button></div>
+ <div class="field" style="margin-top:0"><label>Tugaskan ke</label><select id="asInspector" class="select" onchange="renderAssignList()"></select></div>
+ <div class="as-filters">
+  <div><label>Plant</label><select id="asPlant" class="select" onchange="asFillAreas();renderAssignList()"><option value="">Semua plant</option><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option></select></div>
+  <div><label>Area</label><select id="asArea" class="select" onchange="renderAssignList()"></select></div>
+  <div><label>Jenis</label><select id="asType" class="select" onchange="renderAssignList()"></select></div>
+  <div><label>Tampilkan</label><select id="asShow" class="select" onchange="renderAssignList()"><option value="none">Tanpa tugas</option><option value="mine">Milik inspector ini</option><option value="has">Sudah bertugas</option><option value="all">Semua asset</option></select></div>
+  <div class="full"><input id="asSearch" class="input" placeholder="Cari ID, nama, lokasi…" oninput="renderAssignList()"></div>
+ </div>
+ <label class="chk" style="margin-top:12px"><input type="checkbox" id="asAll" onchange="asToggleAll(this.checked)"> <span id="asAllLbl">Pilih semua yang sesuai filter</span></label>
+ <div class="as-list" id="asList"></div>
+ <div class="muted" id="asNote" style="font-size:12px;margin-top:6px"></div>
+ <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn primary" style="flex:1 1 220px" id="asGo" onclick="doAssign()">Tugaskan</button><button class="btn" onclick="closeModal('assignModal')">Tutup</button></div>
 </div></div>
 <div class="toast" id="toast">Tersimpan</div>
 
@@ -1909,8 +1938,9 @@ function renderInventory(){
  typeFilter.innerHTML='<option value="">Semua Jenis</option>'+types.map(t=>`<option>${t}</option>`).join("");typeFilter.value=oldType;
  let areas=[...new Set(aa.map(a=>a.area).filter(Boolean))].sort(),oldArea=af;
  areaFilter.innerHTML='<option value="">Semua Area</option>'+areas.map(x=>`<option>${x}</option>`).join("");areaFilter.value=oldArea;
- let rows=aa.filter(a=>(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="NORMAL - USE"?(a.status==="NORMAL - USE"||a.status==="Normal"):sf==="NG"?(a.status==="NG"||a.status==="Rusak"):a.status===sf)));
- assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small>${a.swapNote?`<div class="swap-note">⇄ ${esc(a.swapNote)}</div>`:""}<div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`+(!isSpareAsset(a)?`<button class="btn soft small" onclick="openSwap('${a.id}')">⇄ Ganti Spare</button>`:""):""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
+ renderAsgFilter();const gf=asgFilter.value;
+ let rows=aa.filter(a=>(!gf||(gf==='__none'?!a.assignedTo:a.assignedTo===gf))&&(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="NORMAL - USE"?(a.status==="NORMAL - USE"||a.status==="Normal"):sf==="NG"?(a.status==="NG"||a.status==="Rusak"):a.status===sf)));
+ assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small>${a.swapNote?`<div class="swap-note">⇄ ${esc(a.swapNote)}</div>`:""}${asgLine(a)}<div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`+(!isSpareAsset(a)?`<button class="btn soft small" onclick="openSwap('${a.id}')">⇄ Ganti Spare</button>`:""):""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
 }
 function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat menambah asset");
  editingAssetId=null;
@@ -1920,7 +1950,7 @@ function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN ya
  aStatus.value="NORMAL - USE";aStatusNote.textContent="Due Soon / Expired ditentukan otomatis dari Next Due. Pilih NORMAL - SPARE untuk tabung cadangan.";
  aId.readOnly=false;assetIdEditNote.style.display="none";
  if(me.plant!=="ALL")aPlant.value=me.plant;
- populateAreaOptions();
+ populateAreaOptions();populateAssignOptions("");
  assetModal.classList.add("open")
 }
 function editAsset(id){
@@ -1928,7 +1958,7 @@ function editAsset(id){
  let a=DB.assets.find(x=>x.id===id);if(!a||!allowedPlant(a.plant))return;
  editingAssetId=id;assetModalTitle.textContent="Edit Safety Equipment";assetSaveBtn.textContent="Simpan Perubahan";
  aId.value=a.id;aId.readOnly=true;assetIdEditNote.style.display="block";
- aPlant.value=a.plant;populateAreaOptions(a.area);
+ aPlant.value=a.plant;populateAreaOptions(a.area);populateAssignOptions(a.assignedTo);
  aType.value=a.type;aStatus.value=baseOf(a);aStatusNote.textContent=(a.status==="Due Soon"||a.status==="Expired")?"Saat ini otomatis berstatus "+a.status+" karena Next Due. Pilihan di atas adalah kondisi dasarnya.":"Due Soon / Expired ditentukan otomatis dari Next Due.";aName.value=a.name;aMedia.value=a.media||"";aCapacity.value=a.capacity||"";aLocation.value=a.location||"";aDue.value=a.due||"";
  aPhoto.value="";assetPhotoPreview.src=a.photo||"";assetPhotoPreview.style.display=a.photo?"block":"none";
  assetModal.classList.add("open")
@@ -1944,7 +1974,7 @@ async function saveAsset(){if(!me||me.role!=="admin")return toast("Hanya ADMIN y
  let newPhoto=await imageToSmallData(aPhoto,900);
  if(editingAssetId){
    let a=DB.assets.find(x=>x.id===editingAssetId);if(!a)return;
-   a.plant=plant;a.area=area;a.type=aType.value;a.name=aName.value.trim()||aType.value;a.media=aMedia.value.trim()||"-";a.capacity=aCapacity.value.trim()||"-";a.location=aLocation.value.trim()||"-";a.due=aDue.value;
+   a.plant=plant;a.area=area;a.type=aType.value;a.name=aName.value.trim()||aType.value;a.media=aMedia.value.trim()||"-";a.capacity=aCapacity.value.trim()||"-";a.location=aLocation.value.trim()||"-";a.due=aDue.value;a.assignedTo=aAssign.value||"";
    if(newPhoto)a.photo=newPhoto;
    const chosen=aStatus.value,curBase=baseOf(a);
    if(chosen!==curBase){
@@ -1955,7 +1985,7 @@ async function saveAsset(){if(!me||me.role!=="admin")return toast("Hanya ADMIN y
  }
  if(DB.assets.some(a=>a.id===id))return toast("Asset ID sudah ada");
  if(!newPhoto)return toast("Foto asset wajib ditambahkan");
- DB.assets.unshift({id,plant,area,type:aType.value,name:aName.value.trim()||aType.value,media:aMedia.value.trim()||"-",capacity:aCapacity.value.trim()||"-",location:aLocation.value.trim()||"-",due:aDue.value,status:aStatus.value,baseStatus:"",photo:newPhoto});
+ DB.assets.unshift({id,plant,area,type:aType.value,name:aName.value.trim()||aType.value,media:aMedia.value.trim()||"-",capacity:aCapacity.value.trim()||"-",location:aLocation.value.trim()||"-",due:aDue.value,status:aStatus.value,baseStatus:"",assignedTo:aAssign.value||"",photo:newPhoto});
  saveDB();closeModal("assetModal");renderAll();toast("Asset tersimpan. QR Code dibuat otomatis.");showQR(id)
 }
 function drawQR(text,canvas){const qr=new QRCodeCore(0,QRErrorCorrectLevel.M);qr.addData(text);qr.make();const count=qr.getModuleCount(),quiet=4,size=8,total=(count+quiet*2)*size;canvas.width=canvas.height=total;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,total,total);ctx.fillStyle="#000";for(let r=0;r<count;r++)for(let c=0;c<count;c++)if(qr.isDark(r,c))ctx.fillRect((c+quiet)*size,(r+quiet)*size,size,size)}
@@ -2172,6 +2202,130 @@ async function doSwap(){
  }catch(e){toast(e.message)}
  finally{swBusy=false;swGo.disabled=false;swGo.textContent="⇄ Ganti Sekarang"}
 }
+/* ===== JOB LIST INSPECTOR (penanda penanggung jawab per asset) ===== */
+const isNGa=a=>a.status==="NG"||a.status==="Rusak";
+function myJobs(){return me&&me.role==="inspector"?DB.assets.filter(a=>a.assignedTo===me.username&&allowedPlant(a.plant)):[]}
+function hasJobs(){return myJobs().length>0}
+function focusAssets(){const sc=scopedAssets();return hasJobs()?sc.filter(a=>a.assignedTo===me.username):sc}
+function activeInspectors(plant){return (DB.users||[]).filter(u=>u.role==="inspector"&&u.active&&(!plant||u.plant==="ALL"||u.plant===plant))}
+function asgName(u){const x=userByName(u);return x?x.name:u}
+function asgLine(a){
+ if(!a.assignedTo)return me&&me.role==="admin"?'<div class="asg-line none">👤 Belum ditugaskan</div>':"";
+ const own=me&&me.username===a.assignedTo;
+ if(me&&me.role==="admin"){const x=userByName(a.assignedTo);return `<div class="asg-line${x&&x.active?"":" warn"}">👤 ${esc(x?x.name:a.assignedTo)}${x&&!x.active?" (nonaktif)":""}</div>`}
+ return `<div class="asg-line${own?"":" none"}">👤 ${own?"Tugas Anda":esc(a.assignedTo)}</div>`}
+function renderAsgFilter(){
+ const el=document.getElementById("asgFilter");if(!el)return;
+ if(!me||me.role!=="admin"){el.classList.add("hidden");return}
+ el.classList.remove("hidden");const old=el.value;
+ const ins=(DB.users||[]).filter(u=>u.role==="inspector");
+ el.innerHTML='<option value="">Semua penugasan</option><option value="__none">Belum ditugaskan</option>'+ins.map(u=>`<option value="${esc(u.username)}">${esc(u.name)}</option>`).join("");
+ el.value=[...el.options].some(o=>o.value===old)?old:""}
+function jobState(a,idx){
+ if(isNGa(a))return{k:"ng",lbl:"NG",cls:"bad",txt:inRepair(a)?"Dalam perbaikan / penggantian":"Perlu tindak lanjut"};
+ const r=schedNow(a,idx);
+ if(r){const l=SCHED_LBL[r.st];return{k:r.st==="late"?"late":isDoneSt(r.st)?"done":r.st==="pending"?"pending":"todo",lbl:l[0],cls:l[1],txt:schedText(r)}}
+ const n=new Date(),pre=n.getFullYear()+"-"+pad2(n.getMonth()+1)+"-";
+ const l=(idx.get(a.id)||[]).filter(i=>String(i.date).startsWith(pre)&&i.approval!=="REJECTED");
+ if(l.some(i=>i.approval==="APPROVED"))return{k:"done",lbl:"Selesai",cls:"ok",txt:"Sudah diinspeksi bulan ini"};
+ if(l.length)return{k:"pending",lbl:"Menunggu approval",cls:"info",txt:"Menunggu keputusan admin"};
+ return{k:"todo",lbl:"Belum diinspeksi",cls:"warn",txt:"Belum diinspeksi bulan ini"}}
+function jobCount(list,idx){const c={done:0,pending:0,todo:0,late:0,ng:0};list.forEach(a=>{c[jobState(a,idx).k]++});return c}
+let JOBAREAS=[],JOBOPEN={};
+function jobToggle(i){const k=JOBAREAS[i];JOBOPEN[k]=!JOBOPEN[k];renderJobList()}
+function renderJobList(){
+ const box=document.getElementById("jobPanel");if(!box||!me)return;
+ const mine=myJobs();
+ if(!mine.length){box.classList.add("hidden");return}
+ box.classList.remove("hidden");
+ const idx=inspByAsset(),all=mine.map(a=>({a,j:jobState(a,idx)})),n=all.length,c={done:0,pending:0,todo:0,late:0,ng:0};
+ all.forEach(x=>c[x.j.k]++);
+ jobSub.textContent=new Date().toLocaleDateString("id-ID",{month:"long",year:"numeric"})+" • "+n+" asset menjadi tanggung jawab Anda";
+ jobSummary.innerHTML=`<b>${c.done}</b> selesai • <b>${c.pending}</b> menunggu approval • <b>${c.todo+c.late}</b> belum${c.late?` <span class="tag bad">${c.late} terlambat</span>`:""}${c.ng?` <span class="tag bad">${c.ng} NG</span>`:""}`;
+ jobBar.innerHTML=`<i style="width:${c.done*100/n}%;background:#16a34a"></i><i style="width:${c.pending*100/n}%;background:#60a5fa"></i>`;
+ const f=jobFilter.value,q=(jobSearch.value||"").toLowerCase().trim();
+ const rows=all.filter(x=>(!f||(f==="todo"?(x.j.k==="todo"||x.j.k==="late"):f==="ng"?x.j.k==="ng":x.j.k===f))&&(!q||[x.a.id,x.a.name,x.a.location,x.a.area].join(" ").toLowerCase().includes(q)));
+ const ord={late:0,todo:1,pending:2,done:3,ng:4};
+ rows.sort((x,y)=>ord[x.j.k]-ord[y.j.k]||x.a.id.localeCompare(y.a.id));
+ const g=new Map();rows.forEach(x=>{const k=(me.plant==="ALL"?plantName(x.a.plant)+" • ":"")+(x.a.area||"Tanpa area");if(!g.has(k))g.set(k,[]);g.get(k).push(x)});
+ JOBAREAS=[...g.keys()].sort();
+ const auto=n<=12||!!f||!!q;
+ jobList.innerHTML=JOBAREAS.map((k,i)=>{const L=g.get(k),d=L.filter(x=>x.j.k==="done").length,open=JOBOPEN[k]===undefined?auto:JOBOPEN[k];
+  return `<div class="job-area${open?" open":""}"><div class="job-ah" onclick="jobToggle(${i})"><b><span class="car">▶</span>${esc(k)}</b><span class="mini ${d===L.length?"ok":""}">${d}/${L.length} selesai</span></div><div class="job-body">${L.map(x=>`<div class="job-row" onclick="go('inspection');openScanModal('${esc(x.a.id)}')" style="cursor:pointer"><div class="grow"><b>${esc(x.a.id)}</b> <small class="muted">${esc(x.a.type)}</small><div class="muted" style="font-size:12px">${esc(x.a.location||"-")}</div></div><div class="rt"><span class="tag ${x.j.cls}">${x.j.lbl}</span><div class="muted" style="font-size:11px;margin-top:3px">${esc(x.j.txt)}</div></div></div>`).join("")}</div></div>`}).join("")||'<div class="muted" style="margin-top:10px">Tidak ada asset sesuai filter.</div>'}
+
+/* Ringkasan admin */
+function asgGroups(){
+ const ins=(DB.users||[]).filter(u=>u.role==="inspector"),act=new Set(ins.filter(u=>u.active).map(u=>u.username)),g=new Map(),un=[];
+ ins.filter(u=>u.active).forEach(u=>g.set(u.username,[]));
+ scopedAssets().forEach(a=>{if(a.assignedTo&&act.has(a.assignedTo))g.get(a.assignedTo).push(a);else un.push(a)});
+ return{ins,g,un}}
+function renderAssignSummary(){
+ const p=document.getElementById("assignPanel");if(!p)return;
+ if(!me||me.role!=="admin"){p.classList.add("hidden");return}
+ p.classList.remove("hidden");
+ const idx=inspByAsset(),{ins,g,un}=asgGroups();
+ const row=(u,list)=>{const c=jobCount(list,idx),n=list.length;
+  return `<tr><td>${u?`<b>${esc(u.name)}</b><br><small class="muted">${esc(u.username)}</small>`:`<b>Belum ditugaskan</b><br><small class="muted">termasuk milik akun nonaktif</small>`}</td><td>${u?esc(plantLabel(u)):"-"}</td><td><b>${n}</b></td><td>${c.done}</td><td>${c.pending}</td><td>${c.todo+c.late}</td><td>${c.late?`<span class="mini bad">${c.late}</span>`:"0"}</td><td>${c.ng?`<span class="mini bad">${c.ng}</span>`:"0"}</td><td><button class="btn soft small" onclick="openAssign('${u?esc(u.username):""}')">Atur</button></td></tr>`};
+ assignTable.innerHTML=ins.filter(u=>u.active).map(u=>row(u,g.get(u.username)||[])).join("")+row(null,un)}
+function exportJobCSV(){
+ if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengekspor");
+ const idx=inspByAsset(),as=scopedAssets().slice().sort((a,b)=>(a.assignedTo||"~").localeCompare(b.assignedTo||"~")||a.id.localeCompare(b.id));
+ const rows=[["Inspector","Username","Asset ID","Jenis","Plant","Area","Lokasi","Status Asset","Status Bulan Ini"]].concat(as.map(a=>{const j=jobState(a,idx);return[a.assignedTo?asgName(a.assignedTo):"(Belum ditugaskan)",a.assignedTo||"",a.id,a.type,plantName(a.plant),a.area,a.location,a.status,j.lbl]}));
+ dlFile("job_list_inspector_"+dkey(new Date())+".csv","text/csv;charset=utf-8","﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"));toast("Ekspor "+as.length+" asset (CSV) selesai")}
+
+/* Form asset */
+function populateAssignOptions(sel){
+ if(typeof aAssign==="undefined"||!aAssign)return;
+ const cur=sel!==undefined?sel:aAssign.value,plant=aPlant.value;
+ const ins=activeInspectors(plant);
+ let h='<option value="">— Belum ditugaskan —</option>'+ins.map(u=>`<option value="${esc(u.username)}">${esc(u.name)} (${esc(u.username)})</option>`).join("");
+ if(cur&&!ins.some(u=>u.username===cur)){
+  if(sel!==undefined)h+=`<option value="${esc(cur)}">${esc(asgName(cur))} (tidak aktif / bukan plant ini)</option>`;
+  else{aAssign.innerHTML=h;aAssign.value="";return}}
+ aAssign.innerHTML=h;aAssign.value=cur||""}
+
+/* Penugasan massal */
+const ASG={ids:new Set(),busy:false};
+function openAssign(user){
+ if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengatur penugasan");
+ const ins=activeInspectors();
+ asInspector.innerHTML='<option value="">— pilih inspector —</option>'+ins.map(u=>`<option value="${esc(u.username)}">${esc(u.name)} (${esc(u.username)}) • ${esc(plantLabel(u))}</option>`).join("")+'<option value="__clear">— Hapus penugasan (kosongkan) —</option>';
+ asInspector.value=user||"";asPlant.value="";asSearch.value="";asShow.value=user?"mine":"none";ASG.ids=new Set();
+ const types=[...new Set(DB.assets.map(a=>a.type))].sort();
+ asType.innerHTML='<option value="">Semua jenis</option>'+types.map(t=>`<option>${esc(t)}</option>`).join("");
+ asFillAreas();renderAssignList();assignModal.classList.add("open")}
+function asFillAreas(){
+ const old=asArea.value,p=asPlant.value,areas=[...new Set(DB.assets.filter(a=>!p||a.plant===p).map(a=>a.area).filter(Boolean))].sort();
+ asArea.innerHTML='<option value="">Semua area</option>'+areas.map(x=>`<option>${esc(x)}</option>`).join("");
+ asArea.value=areas.includes(old)?old:""}
+function asOk(a,t){return !t||t.plant==="ALL"||t.plant===a.plant}
+function asVisible(){
+ const sel=asInspector.value,t=sel&&sel!=="__clear"?userByName(sel):null,q=(asSearch.value||"").toLowerCase().trim(),m=asShow.value;
+ return DB.assets.filter(a=>(!asPlant.value||a.plant===asPlant.value)&&(!asArea.value||a.area===asArea.value)&&(!asType.value||a.type===asType.value)&&
+  (m==="all"||(m==="none"?!a.assignedTo:m==="has"?!!a.assignedTo:(t?a.assignedTo===t.username:false)))&&
+  (!q||[a.id,a.name,a.area,a.location].join(" ").toLowerCase().includes(q))).sort((x,y)=>(x.area||"").localeCompare(y.area||"")||x.id.localeCompare(y.id))}
+function renderAssignList(){
+ const sel=asInspector.value,t=sel&&sel!=="__clear"?userByName(sel):null,all=asVisible(),CAP=400,list=all.slice(0,CAP);
+ asList.innerHTML=list.map(a=>{const dis=!asOk(a,t);return `<label class="as-row${dis?" dis":""}"><input type="checkbox" ${ASG.ids.has(a.id)&&!dis?"checked":""} ${dis?"disabled":""} onchange="asToggle('${esc(a.id)}',this.checked)"><div class="grow"><b>${esc(a.id)}</b> <small class="muted">${esc(a.type)} • ${esc(plantName(a.plant))} • ${esc(a.area||"-")}</small><div class="muted" style="font-size:12px">${esc(a.location||"-")}${a.assignedTo?" • 👤 "+esc(asgName(a.assignedTo)):""}${dis?" • di luar plant inspector":""}</div></div></label>`}).join("")||'<div class="muted" style="padding:14px">Tidak ada asset sesuai filter.</div>';
+ asNote.textContent=all.length>CAP?`Menampilkan ${CAP} dari ${all.length} asset. Persempit filter untuk melihat sisanya.`:`${all.length} asset sesuai filter.`;
+ const en=list.filter(a=>asOk(a,t));asAll.checked=en.length>0&&en.every(a=>ASG.ids.has(a.id));
+ asAllLbl.textContent=`Pilih semua yang sesuai filter (${en.length})`;asAll.disabled=!en.length;
+ asUpdateBtn()}
+function asUpdateBtn(){const n=ASG.ids.size,sel=asInspector.value;asGo.textContent=!sel?"Pilih inspector dulu":sel==="__clear"?`Hapus penugasan ${n} asset`:`Tugaskan ${n} asset`;asGo.disabled=ASG.busy||!sel||!n}
+function asToggle(id,on){on?ASG.ids.add(id):ASG.ids.delete(id);renderAssignList()}
+function asToggleAll(on){const sel=asInspector.value,t=sel&&sel!=="__clear"?userByName(sel):null;asVisible().slice(0,400).forEach(a=>{if(asOk(a,t)){on?ASG.ids.add(a.id):ASG.ids.delete(a.id)}});renderAssignList()}
+async function doAssign(){
+ if(ASG.busy)return;const sel=asInspector.value,ids=[...ASG.ids];
+ if(!sel)return toast("Pilih inspector terlebih dahulu");if(!ids.length)return toast("Pilih minimal satu asset");
+ ASG.busy=true;asGo.disabled=true;asGo.innerHTML='<span class="spinner"></span> Menyimpan…';
+ try{
+  await waitSync();
+  const r=await api("assignAssets",{ids,to:sel==="__clear"?"":sel});
+  try{await pullAll();renderAll()}catch(e){}
+  ASG.ids=new Set();ASG.busy=false;renderAssignList();
+  toast(sel==="__clear"?r.changed+" asset dilepas dari penugasan":r.changed+" asset ditugaskan ke "+asgName(sel))
+ }catch(e){ASG.busy=false;asUpdateBtn();toast(e.message||"Gagal menyimpan penugasan")}}
+
 /* ===== AKUN & PASSWORD ===== */
 const fmtWhen=x=>{if(!x)return"-";const d=new Date(x);return isNaN(d)?String(x):d.toLocaleString("id-ID",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
 function uRoleChange(){const adm=uRole.value==="admin";uPlant.disabled=adm;uPlantWrap.style.opacity=adm?".45":"1"}
@@ -2581,12 +2735,13 @@ function schedText(r){
   case"done":case"doneLate":return r.next?"Berikutnya batas "+fmtDate(r.next):"Selesai";
   default:return "Tidak ada inspeksi yang disetujui pada bulan itu"}}
 function schedBadge(a){const r=schedNow(a,SIDX||undefined);return r?`<div style="margin-top:6px;font-size:11px">${schedTag(r)} <span class="muted">${esc(schedText(r))}</span></div>`:""}
-function schedAlerts(){const idx=inspByAsset();return scopedAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r&&(x.r.st==="late"||x.r.st==="due")).sort((x,y)=>(x.r.st==="late"?0:1)-(y.r.st==="late"?0:1)||x.r.left-y.r.left||x.a.id.localeCompare(y.a.id))}
+function schedAlerts(){const idx=inspByAsset();return focusAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r&&(x.r.st==="late"||x.r.st==="due")).sort((x,y)=>(x.r.st==="late"?0:1)-(y.r.st==="late"?0:1)||x.r.left-y.r.left||x.a.id.localeCompare(y.a.id))}
 function schedAlertHtml(x){const late=x.r.st==="late";return `<div class="notice ${late?"danger":"warning"}"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>${esc(x.a.id)} • ${esc(plantName(x.a.plant))}</b><div>${esc(x.a.name||"")} • ${esc(x.a.location||"")}</div><small class="muted">Inspeksi rutin bulanan • ${esc(schedText(x.r))}</small></div>${schedTag(x.r)}</div></div>`}
 function schedSummaryHtml(){const al=schedAlerts();if(!al.length)return"";const late=al.filter(x=>x.r.st==="late").length,due=al.length-late;return `<div class="notice ${late?"danger":"warning"}"><b>Inspeksi rutin bulan ini</b><div style="font-size:12px">${late?late+" asset terlambat":""}${late&&due?" • ":""}${due?due+" asset perlu diinspeksi":""}</div></div>`}
-function schedHero(){const idx=inspByAsset(),rows=scopedAssets().map(a=>schedNow(a,idx)).filter(Boolean);if(!rows.length)return"";return ` • inspeksi rutin ${rows.filter(r=>isDoneSt(r.st)).length}/${rows.length} selesai`}
+function schedHero(){const idx=inspByAsset(),rows=focusAssets().map(a=>schedNow(a,idx)).filter(Boolean);if(!rows.length)return"";return ` • inspeksi rutin ${rows.filter(r=>isDoneSt(r.st)).length}/${rows.length} selesai`}
 function renderInspectionTasks(){
  const box=document.getElementById("taskPanel");if(!box||!me)return;
+ if(hasJobs()){box.classList.add("hidden");return}
  const idx=inspByAsset(),rows=scopedAssets().map(a=>({a,r:schedNow(a,idx)})).filter(x=>x.r);
  if(!rows.length){box.classList.add("hidden");return}
  box.classList.remove("hidden");
@@ -2599,7 +2754,7 @@ function renderInspectionTasks(){
  taskList.innerHTML=rows.map(x=>`<div class="tk-row"><div class="grow"><b>${esc(x.a.id)}</b><div class="muted" style="font-size:12px">${esc(x.a.area||"-")} • ${esc(x.a.location||"-")}${me.plant==="ALL"?" • "+esc(plantName(x.a.plant)):""}</div></div><div style="text-align:right">${schedTag(x.r)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(schedText(x.r))}</div></div></div>`).join("")}
 function cfgSchedToggle(){cfgSchedBox.classList.toggle("hidden",cfgSchedMode.value!=="monthly")}
 
-function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
+function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderJobList,renderAssignSummary,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
 
 function bootHide(){bootLoader.classList.remove("show")}
 function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".spinner").style.display="none"}
