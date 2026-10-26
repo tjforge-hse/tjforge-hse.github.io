@@ -323,9 +323,9 @@ th,td{padding:9px 8px}
       <div><label>ID / Username</label><input id="uUsername" class="input" placeholder="INS-001" autocomplete="off"></div>
       <div><label>Nama Lengkap</label><input id="uName" class="input" placeholder="Nama lengkap" autocomplete="off"></div>
       <div><label>Role</label><select id="uRole" class="select" onchange="uRoleChange()"><option value="inspector">Inspector</option><option value="admin">Administrator</option></select></div>
-      <div id="uPlantWrap"><label>Plant</label><select id="uPlant" class="select"><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option></select></div>
+      <div id="uPlantWrap"><label>Plant</label><select id="uPlant" class="select"><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option><option value="ALL">Plant 1 &amp; Plant 2 (keduanya)</option></select></div>
       <div class="full"><label>Password Awal (sementara)</label><input id="uPassword" class="input" type="text" autocomplete="off" placeholder="Minimal 6 karakter"></div>
-      <div class="full muted" style="font-size:12px;line-height:1.5">User wajib mengganti password ini sendiri saat login pertama. Administrator memiliki akses ke semua plant dan semua fitur.</div>
+      <div class="full muted" style="font-size:12px;line-height:1.5">User wajib mengganti password ini sendiri saat login pertama. Pilih <b>Plant 1 &amp; Plant 2</b> untuk inspector yang menangani kedua plant. Administrator selalu memiliki akses ke semua plant dan semua fitur.</div>
       <div class="full"><button class="btn primary" style="width:100%" onclick="addUser()">＋ Tambah Akun</button></div>
      </div>
     </div>
@@ -414,7 +414,7 @@ th,td{padding:9px 8px}
 <div class="modal" id="userEditModal"><div class="modalbox" style="max-width:460px"><div class="modalhead"><h3>Edit Akun</h3><button class="close" onclick="closeModal('userEditModal')">×</button></div>
  <div class="field"><label>ID / Username (tidak dapat diubah)</label><input id="ueId" class="input" readonly></div>
  <div class="field"><label>Nama Lengkap</label><input id="ueName" class="input" maxlength="80"></div>
- <div class="field" id="uePlantWrap"><label>Plant</label><select id="uePlant" class="select"><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option></select></div>
+ <div class="field" id="uePlantWrap"><label>Plant</label><select id="uePlant" class="select"><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option><option value="ALL">Plant 1 &amp; Plant 2 (keduanya)</option></select></div>
  <div class="muted" id="ueNote" style="font-size:12px;margin-top:10px;line-height:1.5"></div>
  <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary" style="flex:1" onclick="saveUserEdit()">Simpan Perubahan</button><button class="btn" onclick="closeModal('userEditModal')">Batal</button></div>
 </div></div>
@@ -1871,11 +1871,11 @@ function applyRoleAccess(){
  approvalNav.style.display=isAdmin?"flex":"none";navFindings.style.display=isAdmin?"flex":"none";
  navNotifications.style.display=isAdmin?"flex":"none";settingsNav.style.display=isAdmin?"flex":"none";
  addAssetBtn.style.display=isAdmin?"inline-block":"none";
- plantFilter.style.display=isAdmin?"block":"none";
+ plantFilter.style.display=(isAdmin||me.plant==="ALL")?"block":"none";
 }
 function showApp(){
  loginScreen.style.display="none";guestScreen.classList.add("hidden");app.style.display="block";
- userName.textContent=me.name;userRole.textContent=me.role.toUpperCase()+(me.plant!=="ALL"?" • "+plantName(me.plant):" • ALL PLANTS");heroName.textContent=me.name;
+ userName.textContent=me.name;userRole.textContent=me.role.toUpperCase()+(me.plant!=="ALL"?" • "+plantName(me.plant):(me.role==="admin"?" • ALL PLANTS":" • PLANT 1 & 2"));heroName.textContent=me.name;
  populatePlantFilter();applyRoleAccess();cfgTypeOptions();renderAll();
  if(me.role==="inspector"){go("inspection")}else{let lp="";try{lp=window.__restorePage?(localStorage.getItem("fsPage")||""):""}catch(e){}window.__restorePage=false;go(lp&&titles[lp]?lp:"dashboard")}
  let q=new URLSearchParams(location.search).get("asset");if(q&&me.role==="admin"){go("inventory");assetSearch.value=q;renderInventory()}
@@ -2175,18 +2175,19 @@ async function doSwap(){
 /* ===== AKUN & PASSWORD ===== */
 const fmtWhen=x=>{if(!x)return"-";const d=new Date(x);return isNaN(d)?String(x):d.toLocaleString("id-ID",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
 function uRoleChange(){const adm=uRole.value==="admin";uPlant.disabled=adm;uPlantWrap.style.opacity=adm?".45":"1"}
+const plantLabel=u=>u.plant==="ALL"?(u.role==="admin"?"All Plants":"Plant 1 & Plant 2"):plantName(u.plant);
 function userByName(n){return (DB.users||[]).find(x=>x.username===n)}
 function renderUsers(){
  if(!me||me.role!=="admin"||!document.getElementById("userTable"))return;
  const us=DB.users||[],req=us.filter(u=>u.resetRequested);
  resetBanner.innerHTML=req.length?`<div class="notice warning" style="margin:0 0 10px"><b>${req.length} permintaan reset password</b><div style="font-size:12px;margin-top:3px">${req.map(u=>esc(u.username)+" ("+esc(u.name)+")").join(", ")}. Buka <b>Detail</b> lalu buat password sementara.</div></div>`:"";
  userTable.innerHTML=us.map(u=>{const un=esc(u.username),self=u.username===me.username;
-  return `<tr><td><b>${un}</b></td><td>${esc(u.name)}<br><small class="muted">${u.role.toUpperCase()} • ${u.plant==="ALL"?"All Plants":plantName(u.plant)}${u.mustChange?" • pw sementara":""}</small></td><td><span class="${u.active===false?"status-inactive":"status-active"}">${u.active===false?"NONAKTIF":"AKTIF"}</span>${u.resetRequested?'<br><span class="tag bad">Minta reset</span>':""}</td><td><div class="u-actions"><button class="btn soft small" onclick="openUserDetail('${un}')">Detail</button><button class="btn soft small" onclick="openUserEdit('${un}')">Edit</button>${self?"":`<button class="btn soft small" onclick="toggleUser('${un}')">${u.active===false?"Aktifkan":"Nonaktifkan"}</button>`}</div></td></tr>`}).join("");
+  return `<tr><td><b>${un}</b></td><td>${esc(u.name)}<br><small class="muted">${u.role.toUpperCase()} • ${plantLabel(u)}${u.mustChange?" • pw sementara":""}</small></td><td><span class="${u.active===false?"status-inactive":"status-active"}">${u.active===false?"NONAKTIF":"AKTIF"}</span>${u.resetRequested?'<br><span class="tag bad">Minta reset</span>':""}</td><td><div class="u-actions"><button class="btn soft small" onclick="openUserDetail('${un}')">Detail</button><button class="btn soft small" onclick="openUserEdit('${un}')">Edit</button>${self?"":`<button class="btn soft small" onclick="toggleUser('${un}')">${u.active===false?"Aktifkan":"Nonaktifkan"}</button>`}</div></td></tr>`}).join("");
  settingsNav.innerHTML="⚙ Pengaturan & Wewenang"+(req.length?` <span class="tag bad" style="margin-left:6px">${req.length}</span>`:"")
 }
 function resetNoticeHtml(){
  if(!me||me.role!=="admin")return"";
- return (DB.users||[]).filter(u=>u.resetRequested).map(u=>`<div class="notice warning"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Permintaan reset password • ${esc(u.username)}</b><div>${esc(u.name)} • ${u.plant==="ALL"?"All Plants":plantName(u.plant)}</div><small class="muted">Diminta ${fmtWhen(u.resetRequested)}</small></div><button class="btn soft small" onclick="go('settings');openUserDetail('${esc(u.username)}')">Buka Detail</button></div></div>`).join("")
+ return (DB.users||[]).filter(u=>u.resetRequested).map(u=>`<div class="notice warning"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Permintaan reset password • ${esc(u.username)}</b><div>${esc(u.name)} • ${plantLabel(u)}</div><small class="muted">Diminta ${fmtWhen(u.resetRequested)}</small></div><button class="btn soft small" onclick="go('settings');openUserDetail('${esc(u.username)}')">Buka Detail</button></div></div>`).join("")
 }
 function addUser(){
  if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat menambah akun");
@@ -2216,7 +2217,7 @@ function pwStatusHtml(u){
 function fillUserDetail(username){
  const u=userByName(username);if(!u)return closeModal("userDetailModal");
  udTitle.textContent="Detail Akun • "+u.username;
- udInfo.innerHTML=`<div class="ud-grid"><span>ID / Username</span><span><b>${esc(u.username)}</b></span><span>Nama</span><span>${esc(u.name)}</span><span>Role</span><span>${u.role==="admin"?"Administrator":"Inspector"}</span><span>Plant</span><span>${u.plant==="ALL"?"All Plants":plantName(u.plant)}</span><span>Status akun</span><span class="${u.active===false?"status-inactive":"status-active"}">${u.active===false?"NONAKTIF":"AKTIF"}</span><span>Status password</span><span>${pwStatusHtml(u)}</span></div>
+ udInfo.innerHTML=`<div class="ud-grid"><span>ID / Username</span><span><b>${esc(u.username)}</b></span><span>Nama</span><span>${esc(u.name)}</span><span>Role</span><span>${u.role==="admin"?"Administrator":"Inspector"}</span><span>Plant</span><span>${plantLabel(u)}</span><span>Status akun</span><span class="${u.active===false?"status-inactive":"status-active"}">${u.active===false?"NONAKTIF":"AKTIF"}</span><span>Status password</span><span>${pwStatusHtml(u)}</span></div>
  <div class="ud-box">🔒 Password disimpan terenkripsi (hash), sehingga <b>tidak dapat dibaca siapa pun, termasuk Admin</b>. Jika user lupa atau perlu direset, buat <b>password sementara</b>. Password itu tampil satu kali untuk Anda, lalu user wajib menggantinya sendiri saat login.</div>`;
  const self=u.username===me.username;
  udActions.innerHTML=(self?`<button class="btn soft" onclick="closeModal('userDetailModal');openPwModal(false)">🔑 Ganti Password Saya</button>`:`<button class="btn primary" onclick="makeTempPw('${esc(u.username)}')">🔑 Buat Password Sementara</button>`)+`<button class="btn soft" onclick="openUserEdit('${esc(u.username)}')">✎ Edit Akun</button><button class="btn" onclick="closeModal('userDetailModal')">Tutup</button>`
@@ -2244,7 +2245,7 @@ function selTmp(t){const r=document.createRange();r.selectNodeContents(t);const 
 function openUserEdit(username){
  const u=userByName(username);if(!u)return;
  closeModal("userDetailModal");
- ueId.value=u.username;ueName.value=u.name;uePlant.value=u.plant==="ALL"?"PLANT-1":u.plant;
+ ueId.value=u.username;ueName.value=u.name;uePlant.value=u.role==="admin"?"PLANT-1":u.plant;
  uePlantWrap.style.display=u.role==="admin"?"none":"";
  ueNote.textContent=u.role==="admin"?"Administrator memiliki akses ke semua plant. ID user tidak dapat diubah karena menjadi acuan riwayat inspeksi dan log.":"ID user tidak dapat diubah karena menjadi acuan riwayat inspeksi dan log. Password diatur lewat Detail → Buat Password Sementara.";
  userEditModal.classList.add("open")
