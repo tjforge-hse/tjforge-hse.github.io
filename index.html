@@ -174,6 +174,9 @@ th,td{padding:9px 8px}
 .or-line{display:flex;align-items:center;gap:10px;margin:18px 0 14px;color:var(--muted);font-size:12px;font-weight:800}.or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
 .pw-wrap{position:relative}.pw-wrap .input{padding-right:46px}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:19px;cursor:pointer;padding:6px 9px;border-radius:9px;opacity:.65}.pw-eye.on{opacity:1;background:#e8f2fe}
 .forgot-link{color:var(--blue)!important;text-decoration:none!important}.forgot-link:hover{text-decoration:underline!important}
+.swap-note{margin-top:6px;font-size:11px;font-weight:700;color:#8a5a00;background:#fff6e0;border:1px solid #ffe0a0;border-radius:8px;padding:5px 8px;line-height:1.4}
+.sw-box{border:1px solid var(--border);border-radius:12px;padding:11px 13px;background:#fafcff;font-size:13px;line-height:1.55;margin-top:12px}.sw-box.pre{background:#f2f8ff;border-color:#cfe4f7}
+.sw-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.sw-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -414,6 +417,22 @@ th,td{padding:9px 8px}
  <div class="field" id="uePlantWrap"><label>Plant</label><select id="uePlant" class="select"><option value="PLANT-1">Plant 1</option><option value="PLANT-2">Plant 2</option></select></div>
  <div class="muted" id="ueNote" style="font-size:12px;margin-top:10px;line-height:1.5"></div>
  <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary" style="flex:1" onclick="saveUserEdit()">Simpan Perubahan</button><button class="btn" onclick="closeModal('userEditModal')">Batal</button></div>
+</div></div>
+<div class="modal" id="swapModal"><div class="modalbox" style="max-width:640px"><div class="modalhead"><h3 id="swTitle">Ganti dengan Spare</h3><button class="close" onclick="closeModal('swapModal')">×</button></div>
+ <div id="swForm">
+  <div class="sw-box" id="swBroken_"></div>
+  <div class="field"><label>Asset spare pengganti</label><select id="swSpare" class="select" onchange="swPreview()"></select><div class="muted" id="swSpareNote" style="font-size:12px;margin-top:6px"></div></div>
+  <div class="field"><label>Alasan penggantian <span style="color:#c62f2f">*</span></label><input id="swReason" class="input" list="swReasons" maxlength="200" placeholder="mis. Tekanan gauge turun" oninput="swPreview()"><datalist id="swReasons"><option value="Tekanan gauge turun / di zona merah"><option value="Tabung bocor"><option value="Tabung korosi / penyok"><option value="Segel / safety pin rusak"><option value="Selang / nozzle rusak"><option value="Perlu refill / masa berlaku habis"></datalist></div>
+  <div class="sw-row">
+   <div class="field"><label>Status tabung yang dilepas</label><select id="swStatus" class="select" onchange="swPreview()"><option value="Rusak">Rusak</option><option value="NG">NG</option></select></div>
+   <div class="field"><label>Lokasi tabung yang dilepas</label><input id="swToLoc" class="input" maxlength="120" value="Gudang HSE / Bengkel refill" oninput="swPreview()"></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="swFinding" checked onchange="swFindingToggle()"> Buat finding untuk tabung yang dilepas (pelacakan sampai diperbaiki)</label>
+  <div class="field" id="swSevWrap" style="margin-top:8px"><label>Tingkat finding</label><select id="swSev" class="select"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+  <div class="sw-box pre" id="swPre"></div>
+  <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary" style="flex:1" id="swGo" onclick="doSwap()">⇄ Ganti Sekarang</button><button class="btn" onclick="closeModal('swapModal')">Batal</button></div>
+ </div>
+ <div id="swDone" class="hidden"></div>
 </div></div>
 <div class="toast" id="toast">Tersimpan</div>
 
@@ -1749,8 +1768,8 @@ const DEFAULT_USERS=[
 ];
 const PLANTS=[{id:"PLANT-1",name:"Plant 1"},{id:"PLANT-2",name:"Plant 2"}];
 const SUBAREAS={
- "PLANT-1":["Office Lt.1","Office Lt.2","Machining","Finishing","Heat Treatment","Dies Maker","Forging","Utility","Rest Area"],
- "PLANT-2":["Office Lt.1","Office Lt.2","Machining","Spare","Finishing","Heat Treatment","Factory","Dies Maker","Forging","Utility","Rest Area","Security Office","Propeller Assy","Axle Assy"]
+ "PLANT-1":["Office Lt.1","Office Lt.2","Machining","Finishing","Heat Treatment","Dies Maker","Forging","Utility","Rest Area","Gudang HSE"],
+ "PLANT-2":["Office Lt.1","Office Lt.2","Machining","Spare","Finishing","Heat Treatment","Factory","Dies Maker","Forging","Utility","Rest Area","Security Office","Propeller Assy","Axle Assy","Gudang HSE"]
 };
 const CHECKLISTS={
  "APAR":["Akses tidak terhalang","Posisi & signage sesuai","Kondisi tabung tidak korosi/penyok","Pressure gauge normal","Safety pin & seal utuh","Hose / nozzle baik","Label & masa berlaku terbaca"],
@@ -1864,7 +1883,7 @@ function showApp(){
 }
 async function logout(){try{await api("logout")}catch(e){}tokStore.clear();tokStore.clear();location.reload()}
 function populatePlantFilter(){let list=PLANTS.filter(p=>me.plant==="ALL"||p.id===me.plant);plantFilter.innerHTML=(me.plant==="ALL"?'<option value="ALL">Semua Plant</option>':"")+list.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");aPlant.innerHTML=list.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");if(me.plant!=="ALL")plantFilter.value=me.plant;populateAreaOptions()}
-function populateAreaOptions(selectedArea=""){let p=aPlant.value||"PLANT-1",areas=SUBAREAS[p]||[];aArea.innerHTML=areas.map(x=>`<option value="${x}">${x}</option>`).join("");if(selectedArea&&areas.includes(selectedArea))aArea.value=selectedArea}
+function populateAreaOptions(selectedArea=""){let p=aPlant.value||"PLANT-1",areas=SUBAREAS[p]||[];aArea.innerHTML=areas.map(x=>`<option value="${x}">${x}</option>`).join("");if(selectedArea&&!areas.includes(selectedArea))aArea.insertAdjacentHTML("beforeend",`<option value="${esc(selectedArea)}">${esc(selectedArea)}</option>`);if(selectedArea)aArea.value=selectedArea}
 
 const titles={dashboard:["Dashboard","Monitoring keselamatan terintegrasi"],inventory:["Inventory","Data APAR, Hydrant dan safety equipment"],inspection:["Inspeksi","Checklist harian, bulanan dan tahunan"],calendar:["Kalender Inspeksi","Histori dan jadwal inspeksi pada kalender"],approval:["Approval Supervisor","Persetujuan hasil inspeksi"],findings:["Finding & Corrective Action","Tindak lanjut kondisi tidak sesuai"],notifications:["Notifikasi","Due soon dan expired otomatis"],history:["Riwayat","Histori inspeksi, approval, finding dan log aktivitas"],settings:["Pengaturan & Wewenang","Manajemen user, role, dan backup sistem"]};
 function go(id){try{localStorage.setItem("fsPage",id)}catch(e){}document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav a").forEach(a=>a.classList.toggle("active",a.dataset.page===id));pageTitle.textContent=titles[id][0];pageSub.textContent=titles[id][1];sidebar.classList.remove("open");renderAll()}
@@ -1886,7 +1905,7 @@ function renderInventory(){
  let areas=[...new Set(aa.map(a=>a.area).filter(Boolean))].sort(),oldArea=af;
  areaFilter.innerHTML='<option value="">Semua Area</option>'+areas.map(x=>`<option>${x}</option>`).join("");areaFilter.value=oldArea;
  let rows=aa.filter(a=>(!q||[a.id,a.name,a.area,a.location,a.media,plantName(a.plant)].join(" ").toLowerCase().includes(q))&&(!tf||a.type===tf)&&(!af||a.area===af)&&(!sf||(sf==="Normal"?isNormalSt(a.status):a.status===sf)));
- assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small><div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`:""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
+ assetCards.innerHTML=rows.map(a=>`<div class="asset">${a.photo?`<img class="asset-photo" src="${a.photo}" alt="Foto ${a.id}" onclick="window.open(this.src,'_blank')">`:`<div class="asset-photo-placeholder">FOTO BELUM TERSEDIA</div>`}<div style="display:flex;justify-content:space-between;gap:8px"><div><h4>${a.id}</h4><small>${a.type} • ${plantName(a.plant)} • ${a.area||"-"}</small></div>${tag(a.status)}</div><p style="margin:11px 0 4px">${a.name}</p><small>${a.location||"-"} • ${a.media} • ${a.capacity}</small>${a.swapNote?`<div class="swap-note">⇄ ${esc(a.swapNote)}</div>`:""}<div style="font-size:11px;margin-top:6px;color:var(--muted)">Next Due: ${fmtDate(a.due)} • QR otomatis tersedia</div>${schedBadge(a)}<div class="asset-actions"><button class="btn soft small" onclick="showQR('${a.id}')">▣ QR</button>${me&&me.role==="admin"?`<button class="btn soft small" onclick="editAsset('${a.id}')">✎ Edit</button>`+(a.status!=="NORMAL - SPARE"?`<button class="btn soft small" onclick="openSwap('${a.id}')">⇄ Ganti Spare</button>`:""):""}<button class="btn soft small" onclick="go('inspection');openScanModal('${a.id}')">☑ Scan & Inspeksi</button><button class="btn soft small" onclick="viewAssetHistory('${a.id}')">🕘 Riwayat</button></div></div>`).join("")||'<div class="muted">Tidak ada asset sesuai filter.</div>'
 }
 function openAssetModal(){if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat menambah asset");
  editingAssetId=null;
@@ -2099,6 +2118,47 @@ async function installApp(){
  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;return}
  const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
  toast(ios?"Di Safari: ketuk tombol Bagikan (kotak dengan panah), lalu pilih 'Tambah ke Layar Utama'.":"Di Chrome: ketuk menu ⋮ di kanan atas, lalu pilih 'Tambahkan ke layar utama' atau 'Instal aplikasi'.")
+}
+/* ===== GANTI DENGAN SPARE ===== */
+let swBroken=null,swBusy=false;
+const waitSync=async()=>{for(let i=0;i<60&&(syncBusy||pendingOps().length);i++){if(!syncBusy)await flush();else await new Promise(r=>setTimeout(r,250))}};
+function swSpares(a){return(DB.assets||[]).filter(x=>x.type===a.type&&x.status==="NORMAL - SPARE"&&x.id!==a.id).sort((x,y)=>(y.plant===a.plant)-(x.plant===a.plant)||String(x.id).localeCompare(String(y.id)))}
+function openSwap(id){
+ if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengganti asset dengan spare");
+ const a=DB.assets.find(x=>x.id===id);if(!a)return;
+ swBroken=a;swForm.classList.remove("hidden");swDone.classList.add("hidden");swTitle.textContent="Ganti dengan Spare";
+ swBroken_.innerHTML="";
+ swBroken_.innerHTML=`<b>Asset yang diganti</b><br><b>${esc(a.id)}</b> • ${esc(a.type)} • ${esc(a.name||"")}<br><span class="muted">${plantName(a.plant)} • ${esc(a.area||"-")} • ${esc(a.location||"-")}</span> ${tag(a.status)}`;
+ const sp=swSpares(a);
+ swSpare.innerHTML=sp.length?sp.map(x=>{const exp=x.due&&daysUntil(x.due)<0;return `<option value="${esc(x.id)}"${exp?" disabled":""}>${esc(x.id)} • ${plantName(x.plant)} • ${esc(x.area||"-")}/${esc(x.location||"-")} • due ${fmtDate(x.due)}${exp?" (KEDALUWARSA)":""}</option>`}).join(""):'<option value="">— tidak ada spare tersedia —</option>';
+ const ok=sp.filter(x=>!(x.due&&daysUntil(x.due)<0));
+ if(ok.length)swSpare.value=ok[0].id;
+ swSpareNote.textContent=!sp.length?`Belum ada ${a.type} berstatus NORMAL - SPARE. Ubah status asset spare lewat Edit terlebih dahulu.`:ok.length?"Urutan teratas: spare di plant yang sama.":"Semua spare sudah kedaluwarsa. Perbarui Next Due-nya setelah refill/hydrotest.";
+ swReason.value="";swStatus.value="Rusak";swToLoc.value="Gudang HSE / Bengkel refill";swFinding.checked=true;swSev.value="Medium";swFindingToggle();
+ swGo.disabled=!ok.length;swPreview();swapModal.classList.add("open");setTimeout(()=>swReason.focus(),60)
+}
+function swFindingToggle(){swSevWrap.style.display=swFinding.checked?"":"none";swPreview()}
+function swPreview(){
+ const a=swBroken,sp=DB.assets.find(x=>x.id===swSpare.value);
+ if(!a||!sp){swPre.innerHTML="Pilih asset spare untuk melihat ringkasan.";return}
+ swPre.innerHTML=`<b>Yang akan terjadi:</b><br>• <b>${esc(sp.id)}</b> menjadi <b>NORMAL - USE</b> dan menempati ${plantName(a.plant)} • ${esc(a.area||"-")} • ${esc(a.location||"-")}<br>• <b>${esc(a.id)}</b> menjadi <b>${esc(swStatus.value)}</b> dan dipindah ke Gudang HSE • ${esc(swToLoc.value||"-")}<br>• ${swFinding.checked?"Finding "+esc(swSev.value)+" dibuat untuk "+esc(a.id):"Tanpa finding"}<br>• Tercatat di Riwayat sebagai penggantian oleh ${esc(me.name)}<br><span class="muted">Tabung fisik pun ditukar: pasang ${esc(sp.id)} (QR menempel di tabungnya) di lokasi tersebut.</span>`
+}
+async function doSwap(){
+ if(swBusy||!swBroken)return;
+ const spare=swSpare.value,reason=swReason.value.trim();
+ if(!spare)return toast("Pilih asset spare");
+ if(!reason){swReason.focus();return toast("Alasan penggantian wajib diisi")}
+ swBusy=true;swGo.disabled=true;swGo.innerHTML='<span class="spinner"></span> Memproses…';
+ try{
+  await waitSync();
+  const r=await api("swapAsset",{broken:swBroken.id,spare,reason,brokenStatus:swStatus.value,toLocation:swToLoc.value.trim(),createFinding:swFinding.checked,severity:swSev.value});
+  try{await pullAll();renderAll()}catch(e){}
+  swForm.classList.add("hidden");swDone.classList.remove("hidden");swTitle.textContent="Penggantian Berhasil";
+  swDone.innerHTML=`<div class="sw-box pre"><b>✓ ${esc(r.spare.id)}</b> kini terpasang di <b>${plantName(r.spare.plant)} • ${esc(r.spare.area)} • ${esc(r.spare.location)}</b> (NORMAL - USE).<br><b>${esc(r.broken.id)}</b> dilepas: <b>${esc(r.broken.status)}</b>, di ${esc(r.broken.location)}.${r.finding?`<br>Finding <b>${esc(r.finding.id)}</b> dibuat (target ${fmtDate(r.finding.target)}).`:""}</div>
+  <div class="sw-box"><b>Langkah di lapangan:</b><br>1. Lepas tabung <b>${esc(r.broken.id)}</b> dan pasang tabung <b>${esc(r.spare.id)}</b> di lokasi tersebut.<br>2. Pastikan QR yang menempel di tabung sesuai ID-nya.<br>3. Lakukan inspeksi pemasangan pada ${esc(r.spare.id)}.</div>
+  <div class="u-actions" style="margin-top:16px"><button class="btn primary" onclick="closeModal('swapModal');go('inspection');openScanModal('${esc(r.spare.id)}')">☑ Inspeksi ${esc(r.spare.id)} sekarang</button>${r.finding?`<button class="btn soft" onclick="closeModal('swapModal');go('findings')">Lihat Finding</button>`:""}<button class="btn" onclick="closeModal('swapModal')">Tutup</button></div>`
+ }catch(e){toast(e.message)}
+ finally{swBusy=false;swGo.disabled=false;swGo.textContent="⇄ Ganti Sekarang"}
 }
 /* ===== AKUN & PASSWORD ===== */
 const fmtWhen=x=>{if(!x)return"-";const d=new Date(x);return isNaN(d)?String(x):d.toLocaleString("id-ID",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})};
@@ -2483,8 +2543,9 @@ function localISO(d){d=d||new Date();return d.getFullYear()+"-"+pad2(d.getMonth(
 let SIDX=null;
 function inspByAsset(){const m=new Map();(DB.inspections||[]).forEach(i=>{if(!m.has(i.asset))m.set(i.asset,[]);m.get(i.asset).push(i)});return m}
 function schedOf(type){const t=tplFor(type),s=t&&t.schedule;return s&&s.mode==="monthly"?{start:Math.max(1,Number(s.start)||1),end:Math.min(28,Number(s.end)||5)}:null}
+function inRepair(a){return /^Diganti oleh/.test(a.swapNote||"")&&(a.status==="Rusak"||a.status==="NG")}
 function schedMonth(a,y,m,idx){
- const sc=schedOf(a.type);if(!sc)return null;
+ const sc=schedOf(a.type);if(!sc||inRepair(a))return null;
  idx=idx||inspByAsset();const today=localISO(),pre=y+"-"+pad2(m+1)+"-",from=pre+pad2(sc.start),dl=pre+pad2(sc.end),last=pre+pad2(new Date(y,m+1,0).getDate());
  const list=(idx.get(a.id)||[]).filter(i=>String(i.date)>=from&&String(i.date)<=last&&i.approval!=="REJECTED");
  const ap=list.filter(i=>i.approval==="APPROVED").map(i=>String(i.date)).sort(),pn=list.filter(i=>i.approval==="PENDING").map(i=>String(i.date)).sort();
