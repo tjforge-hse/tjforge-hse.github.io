@@ -45,16 +45,16 @@ label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin-bot
 .notice{padding:11px 12px;border-radius:12px;border:1px solid var(--border);margin:8px 0}.notice.warning{background:#fff8e7;border-color:#ffe2a5}.notice.danger{background:#fff0f0;border-color:#ffd0d0}
 .check-grid{display:grid;grid-template-columns:320px 1fr;gap:17px}.asset-pick{padding:10px 11px;border:1px solid var(--border);border-radius:11px;margin:7px 0;cursor:pointer}.asset-pick.active{border-color:var(--blue);box-shadow:0 0 0 3px #e9f5ff}
 .check-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}.choices{display:flex;gap:6px}.choice{border:1px solid var(--border);background:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.choice.sel.okc{background:#e4f8ed;color:#147b49}.choice.sel.ngc{background:#ffe5e5;color:#c62f2f}.choice.sel.nac{background:#edf2f7;color:#64748b}
-.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.full{grid-column:1/-1}.photo{width:62px;height:48px;object-fit:cover;border:1px solid var(--border);border-radius:8px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.full{grid-column:1/-1}.photo{width:62px;height:48px;object-fit:contain;background:#edf2f7;border:1px solid var(--border);border-radius:8px}
 .modal{display:none;position:fixed;inset:0;background:rgba(15,35,55,.46);z-index:100;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.modalbox{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.19)}.modalhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.close{border:0;width:34px;height:34px;border-radius:9px;background:#edf2f7;font-size:20px}
 .qr-area{text-align:center}canvas.qr{image-rendering:pixelated;width:250px;height:250px;max-width:100%;border:12px solid #fff;box-shadow:var(--shadow)}
 .login-note{font-size:11px;color:var(--muted);margin-top:9px}.toast{position:fixed;right:20px;bottom:20px;background:var(--navy);color:#fff;border-radius:11px;padding:12px 15px;opacity:0;transform:translateY(8px);transition:.2s;z-index:200;pointer-events:none}.toast.show{opacity:1;transform:none}
 
 .realtime{background:#fff;border:1px solid var(--border);border-radius:12px;padding:8px 12px;box-shadow:var(--shadow);min-width:210px;text-align:center}
 .realtime .daydate{font-size:11px;color:var(--muted);font-weight:800}.realtime .clock{font-size:18px;font-weight:900;color:var(--navy);margin-top:2px;letter-spacing:.03em}
-.asset-photo{width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:12px;border:1px solid var(--border);background:#edf2f7}
-.asset-photo-placeholder{width:100%;height:150px;border-radius:12px;margin-bottom:12px;border:1px dashed #b8c6d4;background:#f5f8fb;display:grid;place-items:center;color:#8a9aab;font-weight:800;font-size:12px}
-.photo-preview{width:100%;max-height:210px;object-fit:cover;border-radius:12px;border:1px solid var(--border);display:none;margin-top:8px}
+.asset-photo{width:100%;height:200px;object-fit:contain;border-radius:12px;margin-bottom:12px;border:1px solid var(--border);background:#edf2f7}
+.asset-photo-placeholder{width:100%;height:200px;border-radius:12px;margin-bottom:12px;border:1px dashed #b8c6d4;background:#f5f8fb;display:grid;place-items:center;color:#8a9aab;font-weight:800;font-size:12px}
+.photo-preview{width:100%;max-height:280px;object-fit:contain;background:#edf2f7;border-radius:12px;border:1px solid var(--border);display:none;margin-top:8px}
 .calendar-headbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
 .cal-week{font-size:11px;font-weight:900;text-align:center;color:var(--muted);padding:8px 2px}
@@ -84,7 +84,7 @@ label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin-bot
 .guest-brand{display:flex;align-items:center;gap:12px}.guest-brand img{height:44px;max-width:190px;object-fit:contain;background:#fff;padding:5px 8px;border-radius:9px}
 .guest-hero{background:linear-gradient(135deg,var(--blue),#44a6ff);color:#fff;border-radius:20px;padding:20px;box-shadow:var(--shadow)}
 .guest-asset-grid{display:grid;grid-template-columns:280px 1fr;gap:18px;margin-top:18px}
-.guest-photo{width:100%;height:230px;object-fit:cover;border-radius:15px;border:1px solid var(--border);background:#edf2f7}
+.guest-photo{width:100%;height:280px;object-fit:contain;border-radius:15px;border:1px solid var(--border);background:#edf2f7}
 .guest-detail{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.guest-detail>div{background:#f8fafc;border:1px solid var(--border);padding:11px;border-radius:11px}
 .guest-detail small{display:block;color:var(--muted);font-weight:800;margin-bottom:4px}
 .role-card{border:1px solid var(--border);border-radius:14px;padding:14px;background:#fff}.role-card h4{margin:0 0 6px}
@@ -123,7 +123,7 @@ html,body{overflow-x:hidden;max-width:100%}
 .sidebar{width:min(280px,84vw);overflow-y:auto;padding-bottom:90px}
 .login{padding:10px;align-items:start;grid-template-columns:minmax(0,1fr)}.login-card{width:100%;grid-template-columns:minmax(0,1fr)}.login-left,.login-right{min-width:0}.smk3-card{width:auto}.company{max-width:100%}.login-left{padding:22px;min-height:0}.login-left h1{font-size:26px;margin:20px 0 8px}
 .login-right{padding:26px 18px}.login-right h2{font-size:24px}
-.guest-screen{padding:12px}.guest-photo{height:180px}.guest-hero{padding:15px}
+.guest-screen{padding:12px}.guest-photo{height:230px}.guest-hero{padding:15px}
 .btn{min-height:40px}
 .input,.select,textarea{font-size:16px}
 th,td{padding:9px 8px}
@@ -1863,7 +1863,6 @@ function migrateDB(){
      else if(loc.includes("utility")||loc.includes("emergency cabinet")) guess="Utility";
      a.area=guess;changed=true
    }
-   if(!a.photo){a.photo=sampleAssetPhoto(a.id,a.type);changed=true}
    return a;
  });
  if(!Array.isArray(DB.users)){DB.users=DEFAULT_USERS.map(x=>({...x}));changed=true}
@@ -2029,7 +2028,7 @@ async function showGuestAsset(id){
  let last=history[0],img=(a.photo&&String(a.photo).startsWith("https://"))?`<img class="guest-photo" src="${esc(a.photo)}" alt="Foto Asset">`:'<div class="guest-photo" style="display:grid;place-items:center">Foto tidak tersedia</div>';
  guestContent.innerHTML=`<div class="guest-hero"><div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:12px;opacity:.85">ASSET HISTORY</div><h1 style="margin:4px 0">${esc(a.id)}</h1><div>${esc(a.name)}</div></div>${tag(esc(a.status))}</div></div>
  <div class="guest-asset-grid"><div class="panel">${img}</div>
- <div class="panel"><div class="guest-detail"><div><small>Plant</small><b>${esc(plantName(a.plant))}</b></div><div><small>Area</small><b>${esc(a.area||"-")}</b></div><div><small>Lokasi</small><b>${esc(a.location||"-")}</b></div><div><small>Jenis</small><b>${esc(a.type)}</b></div><div><small>Media / Tipe</small><b>${esc(a.media||"-")}</b></div><div><small>Kapasitas</small><b>${esc(a.capacity||"-")}</b></div><div><small>Next Due</small><b>${fmtDate(a.due)}</b></div><div><small>Last Approved Inspection</small><b>${last?fmtDate(last.date):"Belum ada"}</b></div></div></div></div>
+ <div class="panel"><div class="guest-detail"><div><small>Plant</small><b>${esc(plantName(a.plant))}</b></div><div><small>Area</small><b>${esc(a.area||"-")}</b></div><div><small>Lokasi</small><b>${esc(a.location||"-")}</b></div><div><small>Jenis</small><b>${esc(a.type)}</b></div><div><small>Media / Tipe</small><b>${esc(a.media||"-")}</b></div><div><small>Kapasitas</small><b>${esc(a.capacity||"-")}</b></div><div><small>Next Due</small><b>${fmtDate(a.due)}</b></div><div><small>Inspector (PIC)</small><b>${a.inspector?esc(a.inspector):"Belum ditentukan"}</b>${a.inspector&&a.inspectorFor==="plant"?'<small style="display:block;font-weight:500">Inspector area plant ini</small>':""}</div><div><small>Last Approved Inspection</small><b>${last?fmtDate(last.date):"Belum ada"}</b></div></div></div></div>
  <div class="panel" style="margin-top:18px"><div class="panel-head"><h3>Histori Inspeksi Approved</h3><span class="tag info">READ ONLY</span></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Frekuensi</th><th>Hasil</th><th>Status</th><th>Ringkasan Checklist</th></tr></thead><tbody>${history.length?history.map(i=>`<tr><td>${fmtDate(i.date)}</td><td>${esc(i.frequency)}</td><td>${tag(esc(i.result))}</td><td>${tag(esc(i.approval))}</td><td class="wrap">${esc(Object.entries(i.answers||{}).map(([k,v])=>`${k}: ${v}`).join(" • ")||"-")}</td></tr>`).join(""):'<tr><td colspan="5" class="muted">Belum ada histori inspeksi yang disetujui Admin.</td></tr>'}</tbody></table></div></div>`
 }
 function exitGuest(){guestScreen.classList.add("hidden");app.style.display="none";loginScreen.style.display="grid";history.replaceState(null,"",location.pathname)}
