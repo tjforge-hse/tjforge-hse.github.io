@@ -199,6 +199,11 @@ th,td{padding:9px 8px}
 @media(max-width:700px){.scs{font-size:17px}.company{gap:12px;padding:12px 14px}.company img{max-width:112px}}
 @media(min-width:701px){.company{gap:13px;padding:12px 16px}.company img{max-width:124px}.scs{font-size:21.5px;white-space:nowrap}}
 .guide-btn{display:block;width:100%;margin-top:10px;text-align:center;text-decoration:none;box-sizing:border-box}.guide-sub{text-align:center;font-size:12px;margin-top:6px}.guide-sub a{color:var(--blue);font-weight:700;text-decoration:none}.side-guide{display:block;margin:6px 4px;padding:11px 13px;color:#fff;text-decoration:none;border-radius:11px;background:rgba(255,255,255,.12);font-size:14px;font-weight:700}.side-guide:hover{background:rgba(255,255,255,.22)}
+
+.cfg-std{display:grid;grid-template-columns:26px minmax(0,1fr);gap:6px;margin-top:4px}.cfg-std .input{font-size:13px;padding:8px 10px}.cfg-item+.cfg-item{border-top:1px dashed var(--border);margin-top:10px;padding-top:4px}
+.std-line{margin-top:6px;font-size:12.5px;color:#166534;background:#f0fdf4;border-left:3px solid #22c55e;padding:5px 9px;border-radius:0 8px 8px 0}.std-line b{font-weight:800}
+.illus-box{border:1px solid var(--border);border-radius:14px;padding:8px;margin:0 0 12px;background:#f8fafc}.illus-box summary{cursor:pointer;font-weight:800;padding:4px 6px}.illus-box img{display:block;width:100%;max-width:760px;height:auto;margin:8px auto 2px;border-radius:10px;cursor:zoom-in}
+.cfg-illus{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px}.cfg-illus img{width:100%;max-width:420px;border:1px solid var(--border);border-radius:10px}
 </style>
 </head>
 <body>
@@ -411,7 +416,8 @@ th,td{padding:9px 8px}
  <div class="formgrid"><div><label>Aturan jadwal</label><select id="cfgSchedMode" class="select" onchange="cfgSchedToggle()"><option value="">Tidak ada (manual lewat Next Due)</option><option value="monthly">Bulanan dengan jendela tanggal</option></select></div><div id="cfgSchedBox" class="hidden"><label>Boleh diinspeksi tanggal … sampai batas tanggal …</label><div style="display:flex;gap:8px;align-items:center"><input id="cfgSchedStart" class="input" type="number" min="1" max="28" value="1" style="max-width:90px"><span>s/d</span><input id="cfgSchedEnd" class="input" type="number" min="1" max="28" value="5" style="max-width:90px"></div></div></div>
  <small class="muted">Contoh: tanggal 1 s/d 5 berarti setiap bulan asset jenis ini harus sudah diinspeksi paling lambat tanggal 5. Inspeksi yang di-Reject tidak dihitung. Tanggal diizinkan 1–28.</small>
  <div class="rv-h">Pilihan frekuensi <span class="muted" style="font-weight:400">(nama + interval hari)</span></div><div id="cfgFreqs"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddFreq()">＋ Frekuensi</button>
- <div class="rv-h">Item checklist</div><div id="cfgItems"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddItem()">＋ Item</button>
+ <div class="rv-h">Ilustrasi referensi</div><div class="cfg-illus"><select id="cfgIllus" class="select" onchange="cfgIllusShow()"><option value="">Otomatis (sesuai jenis / media)</option><option value="gauge">APAR Dry Chemical – Pressure Gauge</option><option value="cartridge">APAR Dry Chemical – Cartridge</option><option value="co2">APAR CO₂</option><option value="none">Tanpa ilustrasi</option></select><div id="cfgIllusPrev"></div><small class="muted">Ditampilkan kepada inspector di atas checklist.</small></div>
+ <div class="rv-h">Item checklist <span class="muted" style="font-weight:400">(item inspeksi + standar yang dianggap OK)</span></div><div style="margin:4px 0"><button class="btn soft small" onclick="cfgFillStd()">✨ Isi standar contoh untuk yang masih kosong</button></div><div id="cfgItems"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddItem()">＋ Item</button>
  <div id="cfgMsg" class="notice danger hidden" style="margin-top:12px"></div>
  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><button class="btn" onclick="cfgReset()">↺ Kembalikan ke standar bawaan</button><span style="display:flex;gap:8px"><button class="btn" onclick="closeModal('cfgModal')">Batal</button><button class="btn success" onclick="cfgSave()">Simpan</button></span></div>
 </div></div>
@@ -2088,7 +2094,7 @@ function renderInspectionAssets(){
 }
 function selectInspectionAsset(id,fromScan=false){
  if(!fromScan||verifiedAssetId!==id)return toast("Scan QR asset terlebih dahulu");let a=DB.assets.find(x=>x.id===id);if(!a||!allowedPlant(a.plant))return toast("Asset tidak ditemukan / tidak diizinkan");selected=a;answers={};evidencePhotos={};inspTitle.textContent=a.id;inspMeta.textContent=`${a.name} • ${plantName(a.plant)} • ${a.area||"-"} • ${a.location}`;inspStatus.textContent="QR Terverifikasi";inspStatus.className="tag ok";inspRemark.value="";inspPhoto.value="";
- const cfg=cfgFor(a.type);let items=cfg.items.map(x=>x.t);frequency.innerHTML=cfg.freqs.map(f=>`<option>${esc(f.name)}</option>`).join("");frequency.value=cfg.freqs.some(f=>f.name===cfg.def)?cfg.def:cfg.freqs[0].name;checklistArea.innerHTML=cfgBanner(cfg)+items.map((it,i)=>`<div class="check-row"><div><b>${i+1}. ${esc(it)}</b><div style="margin-top:8px" class="evidence-box"><input id="ev${i}" class="input" type="file" accept="image/*" onchange="setEvidencePhoto(${i},this)"><img id="evthumb${i}" class="evidence-thumb" alt="Bukti item"></div><small class="muted">${cfg.items[i].photo?"Bukti foto wajib untuk item ini.":"Bukti foto opsional untuk item ini."}</small></div><div class="choices"><button id="q${i}OK" class="choice okc" onclick="answer(${i},'OK')">OK</button><button id="q${i}NG" class="choice ngc" onclick="answer(${i},'NG')">NG</button><button id="q${i}NA" class="choice nac" onclick="answer(${i},'N/A')">N/A</button></div></div>`).join("");inspectionFooter.classList.remove("hidden");renderInspectionAssets()
+ const cfg=cfgFor(a.type);let items=cfg.items.map(x=>x.t);frequency.innerHTML=cfg.freqs.map(f=>`<option>${esc(f.name)}</option>`).join("");frequency.value=cfg.freqs.some(f=>f.name===cfg.def)?cfg.def:cfg.freqs[0].name;checklistArea.innerHTML=cfgBanner(cfg)+illusHtml(a.type,a.media,window.innerWidth>700)+items.map((it,i)=>`<div class="check-row"><div><b>${i+1}. ${esc(it)}</b>${stdHtml(cfg.items[i])}<div style="margin-top:8px" class="evidence-box"><input id="ev${i}" class="input" type="file" accept="image/*" onchange="setEvidencePhoto(${i},this)"><img id="evthumb${i}" class="evidence-thumb" alt="Bukti item"></div><small class="muted">${cfg.items[i].photo?"Bukti foto wajib untuk item ini.":"Bukti foto opsional untuk item ini."}</small></div><div class="choices"><button id="q${i}OK" class="choice okc" onclick="answer(${i},'OK')">OK</button><button id="q${i}NG" class="choice ngc" onclick="answer(${i},'NG')">NG</button><button id="q${i}NA" class="choice nac" onclick="answer(${i},'N/A')">N/A</button></div></div>`).join("");inspectionFooter.classList.remove("hidden");renderInspectionAssets()
 }
 async function setEvidencePhoto(i,input){let data=await imageToSmallData(input,700);if(data){evidencePhotos[i]=data;let img=document.getElementById(`evthumb${i}`);img.src=data;img.style.display="block"}else delete evidencePhotos[i];updateInspectionProgress()}
 function answer(i,v){let item=cfgFor(selected.type).items[i].t;answers[item]=v;["OK","NG","NA"].forEach(x=>document.getElementById(`q${i}${x}`).classList.remove("sel"));document.getElementById(`q${i}${v==="N/A"?"NA":v}`).classList.add("sel");updateInspectionProgress()}
@@ -2110,7 +2116,7 @@ function openInspectionReview(id){
  const ans=i.answers||{},ev=i.evidence||{},items=Object.keys(ans),cnt={OK:0,NG:0,"N/A":0};
  items.forEach(k=>{const v=ans[k]==="NA"?"N/A":ans[k];if(cnt[v]!=null)cnt[v]++});
  const f=(l,v)=>`<div><small>${l}</small>${v}</div>`;
- const rows=items.map((k,n)=>{const v=ans[k],p=ev[k];return `<div class="rv-row${v==="NG"?" ng":""}"><div><b>${n+1}. ${esc(k)}</b></div><div><span class="tag ${v==="OK"?"ok":v==="NG"?"bad":"info"}">${esc(v)}</span></div><div class="rv-p">${p?`<img class="photo" src="${esc(p)}" alt="Bukti ${n+1}" onclick="window.open(this.src,'_blank')">`:'<span class="muted" style="font-size:11px">tanpa foto</span>'}</div></div>`}).join("")||'<div class="muted">Tidak ada detail checklist pada inspeksi ini.</div>';
+ const rows=items.map((k,n)=>{const v=ans[k],p=ev[k];const sx=(cfgFor(a.type).items.find(z=>z.t===k)||{}).std;return `<div class="rv-row${v==="NG"?" ng":""}"><div><b>${n+1}. ${esc(k)}</b>${sx?`<div class="muted" style="font-size:11.5px;margin-top:2px">Standar: ${esc(sx)}</div>`:""}</div><div><span class="tag ${v==="OK"?"ok":v==="NG"?"bad":"info"}">${esc(v)}</span></div><div class="rv-p">${p?`<img class="photo" src="${esc(p)}" alt="Bukti ${n+1}" onclick="window.open(this.src,'_blank')">`:'<span class="muted" style="font-size:11px">tanpa foto</span>'}</div></div>`}).join("")||'<div class="muted">Tidak ada detail checklist pada inspeksi ini.</div>';
  reviewBody.innerHTML=
   `<div class="rv-info">${f("Asset",`<b>${esc(i.asset)}</b>`)}${f("Jenis / Nama",esc((a.type||"-")+" • "+(a.name||"-")))}${f("Plant / Area",esc(plantName(i.plant)+" • "+(a.area||"-")))}${f("Lokasi",esc(a.location||"-"))}${f("Tanggal Inspeksi",esc(fmtDate(i.date)))}${f("Frekuensi",esc(i.frequency||"-"))}${f("Inspector",esc(i.inspector||"-"))}${f("Verifikasi QR",i.qrVerified?"✔ Terverifikasi":"✖ Tidak ada")}</div>`+
   `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>Hasil:</b> ${tag(i.result)} <span class="muted">Status approval: ${esc(i.approval)}</span></div>`+
@@ -2687,11 +2693,34 @@ function exportHistory(){
 
 /* ===== PENGATURAN CHECKLIST & FREKUENSI (edit: admin saja; semua role memakai hasilnya) ===== */
 const DEFAULT_FREQS=[{name:"Daily",days:1},{name:"Monthly",days:30},{name:"Annual",days:365}];
+const ILLUS={gauge:{label:"APAR Dry Chemical – Pressure Gauge",src:"ilustrasi-apar-gauge.png"},cartridge:{label:"APAR Dry Chemical – Cartridge",src:"ilustrasi-apar-cartridge.png"},co2:{label:"APAR CO₂",src:"ilustrasi-apar-co2.png"}};
+function illusKey(type,media,tpl){
+ const m=(tpl&&tpl.illus)||"";if(m==="none")return null;if(ILLUS[m])return m;
+ const t=((type||"")+" "+(media||"")).toLowerCase();
+ if(/co2|co₂|karbon/.test(t))return "co2";if(/cartridge|catridge|catrit/.test(t))return "cartridge";if(/apar|powder|dry chemical|serbuk/.test(t))return "gauge";return null}
+const STD_RULES=[
+ [/pressure gauge|gauge|tekanan/,"Jarum pressure gauge berada di zona hijau."],
+ [/serbuk|bolak|balik/,"Serbuk tidak menggumpal: tabung dibolak-balik 3x dan serbuk terasa bergerak bebas di dalam."],
+ [/berat|timbang/,"Berat tabung sesuai berat pada label; penurunan berat maksimal 10%."],
+ [/horn|corong/,"Horn utuh, tidak retak, dan terpasang kuat pada selang."],
+ [/akses|terhalang|clear/,"Akses menuju alat bebas hambatan dan mudah dijangkau; tidak tertutup barang."],
+ [/posisi|signage|penanda|rambu/,"Alat berada di posisi sesuai denah dan penandaan; signage terlihat jelas."],
+ [/korosi|penyok|tabung|body|box/,"Badan bersih; tidak berkarat, penyok, bocor, atau cat mengelupas parah."],
+ [/pin|seal|segel/,"Safety pin terpasang dan segel/seal tidak putus."],
+ [/hose|selang|nozzle|coupling/,"Selang dan nozzle tidak retak, getas, atau tersumbat; sambungan kencang dan tidak bocor."],
+ [/label|masa berlaku|expired|tag inspeksi/,"Label terbaca jelas, masa berlaku belum lewat, dan tag inspeksi terisi."],
+ [/valve|katup/,"Valve berfungsi, tidak bocor, dan tidak macet."],
+ [/battery|baterai/,"Indikator baterai normal; baterai tidak menggembung atau bocor."],
+ [/function|fungsi|alarm|test/,"Alat berfungsi normal saat diuji."],
+ [/lengkap|daftar isi/,"Isi sesuai daftar dan lengkap."]];
+function suggestStd(t){const k=(t||"").toLowerCase();const r=STD_RULES.find(x=>x[0].test(k));return r?r[1]:""}
+function stdHtml(x){return x&&x.std?`<div class="std-line"><b>Standar:</b> ${esc(x.std)}</div>`:""}
+function illusHtml(type,media,open){const k=illusKey(type,media,tplFor(type));if(!k)return "";const u=ILLUS[k];return `<details class="illus-box" ${open?"open":""}><summary>Referensi: bagian-bagian ${esc(u.label)}</summary><img src="${u.src}" alt="Ilustrasi ${esc(u.label)}" onclick="window.open(this.src,'_blank')"></details>`}
 function tplFor(type){const t=(DB.templates||[]).find(x=>x.type===type);return t&&t.items&&t.items.length?t:null}
 function cfgFor(type){
  const t=tplFor(type);
- if(t)return{items:t.items.map(x=>({t:x.t,photo:x.photo!==false})),freqs:(t.frequencies&&t.frequencies.length?t.frequencies:DEFAULT_FREQS).map(f=>({name:f.name,days:Number(f.days)||0})),def:t.defaultFreq||"",standard:t.standard||"",notes:t.notes||"",custom:true,schedule:(t.schedule&&t.schedule.mode)?t.schedule:null,by:t.updatedBy||"",at:t.updatedAt||""};
- return{items:(CHECKLISTS[type]||CHECKLISTS.Other).map(x=>({t:x,photo:true})),freqs:DEFAULT_FREQS.map(f=>({...f})),def:"Monthly",standard:"",notes:"",custom:false,schedule:null,by:"",at:""}}
+ if(t)return{illus:t.illus||"",items:t.items.map(x=>({t:x.t,photo:x.photo!==false,std:x.std||""})),freqs:(t.frequencies&&t.frequencies.length?t.frequencies:DEFAULT_FREQS).map(f=>({name:f.name,days:Number(f.days)||0})),def:t.defaultFreq||"",standard:t.standard||"",notes:t.notes||"",custom:true,schedule:(t.schedule&&t.schedule.mode)?t.schedule:null,by:t.updatedBy||"",at:t.updatedAt||""};
+ return{illus:"",items:(CHECKLISTS[type]||CHECKLISTS.Other).map(x=>({t:x,photo:true,std:suggestStd(x)})),freqs:DEFAULT_FREQS.map(f=>({...f})),def:"Monthly",standard:"",notes:"",custom:false,schedule:null,by:"",at:""}}
 function cfgBanner(c){return(c.standard||c.notes)?`<div class="notice" style="margin:0 0 10px">${c.standard?`<div><b>Standar:</b> ${esc(c.standard)}</div>`:""}${c.notes?`<div style="margin-top:4px;white-space:pre-line">${esc(c.notes)}</div>`:""}</div>`:""}
 function cfgAllTypes(){return[...new Set([...Object.keys(CHECKLISTS),...DB.assets.map(a=>a.type),...(DB.templates||[]).map(t=>t.type),...(CFG.extra||[])].filter(Boolean))].sort()}
 function cfgTypeOptions(){
@@ -2705,17 +2734,19 @@ function openCfgModal(){
  cfgType.value=(selected&&types.includes(selected.type))?selected.type:types[0];cfgLoad();cfgModal.classList.add("open")}
 function cfgLoad(){
  const c=cfgFor(cfgType.value);CFG.type=cfgType.value;CFG.items=c.items;CFG.freqs=c.freqs;
- cfgStd.value=c.standard;cfgNotes.value=c.notes;cfgSchedMode.value=c.schedule?"monthly":"";cfgSchedStart.value=c.schedule?c.schedule.start:1;cfgSchedEnd.value=c.schedule?c.schedule.end:5;cfgSchedToggle();cfgMsg.classList.add("hidden");
+ cfgStd.value=c.standard;cfgNotes.value=c.notes;cfgIllus.value=c.illus||"";cfgSchedMode.value=c.schedule?"monthly":"";cfgSchedStart.value=c.schedule?c.schedule.start:1;cfgSchedEnd.value=c.schedule?c.schedule.end:5;cfgSchedToggle();cfgMsg.classList.add("hidden");
  cfgState.textContent=c.custom?"Pengaturan khusus"+(c.by?" • diubah oleh "+c.by:"")+(c.at?" • "+fmtDT(c.at):""):"Memakai standar bawaan sistem (belum pernah diubah)";
- cfgRender(c.def)}
+ cfgRender(c.def);cfgIllusShow()}
+function cfgIllusShow(){const k=illusKey(CFG.type,"",{illus:cfgIllus.value});cfgIllusPrev.innerHTML=k?`<img src="${ILLUS[k].src}" alt="${esc(ILLUS[k].label)}"><div class="muted" style="font-size:12px">${esc(ILLUS[k].label)}</div>`:'<div class="muted" style="font-size:12px">Tidak ada ilustrasi untuk jenis ini.</div>'}
+function cfgFillStd(){let n=0;CFG.items.forEach(x=>{if(!String(x.std||"").trim()){const g=suggestStd(x.t);if(g){x.std=g;n++}}});cfgRender();toast(n?n+" standar contoh diisi. Periksa dan sesuaikan sebelum menyimpan.":"Tidak ada standar contoh yang cocok untuk item kosong.")}
 function cfgRender(def){
- cfgItems.innerHTML=CFG.items.map((x,i)=>`<div class="cfg-row"><span class="muted">${i+1}.</span><input class="input" maxlength="200" value="${esc(x.t)}" oninput="CFG.items[${i}].t=this.value" placeholder="Nama item pengecekan"><label title="Inspector wajib melampirkan foto"><input type="checkbox" ${x.photo?"checked":""} onchange="CFG.items[${i}].photo=this.checked"> Foto wajib</label><button class="btn small" onclick="cfgMove(${i},-1)" ${i===0?"disabled":""}>↑</button><button class="btn small" onclick="cfgMove(${i},1)" ${i===CFG.items.length-1?"disabled":""}>↓</button><button class="btn danger small" onclick="cfgDelItem(${i})">✕</button></div>`).join("")||'<div class="muted">Belum ada item.</div>';
+ cfgItems.innerHTML=CFG.items.map((x,i)=>`<div class="cfg-item"><div class="cfg-row"><span class="muted">${i+1}.</span><input class="input" maxlength="200" value="${esc(x.t)}" oninput="CFG.items[${i}].t=this.value" placeholder="Nama item pengecekan"><label title="Inspector wajib melampirkan foto"><input type="checkbox" ${x.photo?"checked":""} onchange="CFG.items[${i}].photo=this.checked"> Foto wajib</label><button class="btn small" onclick="cfgMove(${i},-1)" ${i===0?"disabled":""}>↑</button><button class="btn small" onclick="cfgMove(${i},1)" ${i===CFG.items.length-1?"disabled":""}>↓</button><button class="btn danger small" onclick="cfgDelItem(${i})">✕</button></div><div class="cfg-std"><span></span><input class="input" maxlength="300" value="${esc(x.std||"")}" oninput="CFG.items[${i}].std=this.value" placeholder="Standar: kondisi yang dianggap OK (mis. jarum di zona hijau)"></div></div>`).join("")||'<div class="muted">Belum ada item.</div>';
  cfgFreqs.innerHTML=CFG.freqs.map((f,i)=>`<div class="cfg-row f"><input class="input" maxlength="30" value="${esc(f.name)}" oninput="CFG.freqs[${i}].name=this.value" onchange="cfgDefRefresh()" placeholder="Nama (mis. Monthly)"><input class="input" type="number" min="0" max="3650" value="${f.days}" oninput="CFG.freqs[${i}].days=Number(this.value)||0" title="Interval (hari)"><button class="btn danger small" onclick="cfgDelFreq(${i})">✕</button></div>`).join("");
  cfgDefRefresh(def)}
 function cfgDefRefresh(def){const cur=def||cfgDef.value;const names=CFG.freqs.map(f=>f.name.trim()).filter(Boolean);cfgDef.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join("");cfgDef.value=names.includes(cur)?cur:(names[0]||"")}
 function cfgMove(i,d){const j=i+d;if(j<0||j>=CFG.items.length)return;[CFG.items[i],CFG.items[j]]=[CFG.items[j],CFG.items[i]];cfgRender()}
 function cfgDelItem(i){CFG.items.splice(i,1);cfgRender()}
-function cfgAddItem(){CFG.items.push({t:"",photo:true});cfgRender();const l=cfgItems.querySelectorAll("input.input");if(l.length)l[l.length-1].focus()}
+function cfgAddItem(){CFG.items.push({t:"",photo:true,std:""});cfgRender();const l=cfgItems.querySelectorAll("input.input");if(l.length)l[l.length-1].focus()}
 function cfgAddFreq(){if(CFG.freqs.length>=8)return toast("Maksimal 8 pilihan frekuensi");CFG.freqs.push({name:"",days:30});cfgRender()}
 function cfgDelFreq(i){CFG.freqs.splice(i,1);cfgRender()}
 function cfgNewType(){
@@ -2725,7 +2756,7 @@ function cfgNewType(){
 function cfgProblem(m){cfgMsg.textContent=m;cfgMsg.classList.remove("hidden");cfgMsg.scrollIntoView({block:"nearest"})}
 function cfgSave(){
  if(!me||me.role!=="admin")return toast("Hanya ADMIN yang dapat mengubah pengaturan inspeksi");
- const items=CFG.items.map(x=>({t:x.t.trim(),photo:!!x.photo}));
+ const items=CFG.items.map(x=>({t:x.t.trim(),photo:!!x.photo,std:String(x.std||"").trim()}));
  if(!items.length||items.some(x=>!x.t))return cfgProblem("Isi semua nama item, atau hapus baris yang kosong (minimal 1 item).");
  if(items.length>40)return cfgProblem("Maksimal 40 item.");
  const seen=new Set();for(const x of items){const k=x.t.toLowerCase();if(seen.has(k))return cfgProblem('Item ganda: "'+x.t+'"');seen.add(k)}
@@ -2734,13 +2765,13 @@ function cfgSave(){
  const fs=new Set();for(const f of freqs){const k=f.name.toLowerCase();if(fs.has(k))return cfgProblem('Frekuensi ganda: "'+f.name+'"');fs.add(k)}
  let schedObj={};
  if(cfgSchedMode.value==="monthly"){const a=Math.round(Number(cfgSchedStart.value)),b=Math.round(Number(cfgSchedEnd.value));if(!(a>=1&&b<=28&&a<=b))return cfgProblem("Jendela tanggal tidak valid: isi tanggal 1–28 dan tanggal awal tidak boleh melewati batas.");schedObj={mode:"monthly",start:a,end:b}}
- const rec={type:CFG.type,schedule:schedObj,items,frequencies:freqs,defaultFreq:cfgDef.value,standard:cfgStd.value.trim(),notes:cfgNotes.value.trim(),updatedBy:me.name,updatedAt:new Date().toISOString()};
+ const rec={type:CFG.type,schedule:schedObj,items,frequencies:freqs,defaultFreq:cfgDef.value,illus:cfgIllus.value,standard:cfgStd.value.trim(),notes:cfgNotes.value.trim(),updatedBy:me.name,updatedAt:new Date().toISOString()};
  DB.templates=DB.templates||[];const ix=DB.templates.findIndex(t=>t.type===CFG.type);if(ix>=0)DB.templates[ix]=rec;else DB.templates.push(rec);
  saveDB();cfgTypeOptions();closeModal("cfgModal");toast("Pengaturan "+CFG.type+" disimpan. Berlaku pada inspeksi berikutnya.")}
 function cfgReset(){
  if(!me||me.role!=="admin")return;if(!confirm('Kembalikan "'+CFG.type+'" ke standar bawaan sistem?'))return;
  DB.templates=DB.templates||[];const ix=DB.templates.findIndex(t=>t.type===CFG.type);
- if(ix>=0){DB.templates[ix]={type:CFG.type,schedule:{},items:[],frequencies:[],defaultFreq:"",standard:"",notes:"",updatedBy:me.name,updatedAt:new Date().toISOString()};saveDB()}
+ if(ix>=0){DB.templates[ix]={type:CFG.type,schedule:{},items:[],frequencies:[],defaultFreq:"",illus:"",standard:"",notes:"",updatedBy:me.name,updatedAt:new Date().toISOString()};saveDB()}
  cfgLoad();toast("Dikembalikan ke standar bawaan")}
 
 
