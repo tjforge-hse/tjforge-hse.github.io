@@ -408,11 +408,37 @@ tbody tr:hover td{background:#fafdfc}
 .ed-minor{position:absolute!important;right:0!important;top:38%!important;width:40%!important}
 .ed-lower{position:absolute!important;left:2%!important;bottom:0!important}
 @media(max-width:900px){.ed-cards{height:250px!important;min-height:250px!important}.ed-main{width:62%!important}.ed-art{height:100px}.ed-main p{font-size:10px!important}.ed-minor{width:40%!important;top:42%!important}}
+
+/* ===== Loading screen ===== */
+.ldr{display:none;position:fixed;inset:0;z-index:400;align-items:center;justify-content:center;padding:20px;background:rgba(244,249,247,.9);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+.ldr.show{display:flex;animation:ldfade .22s ease both}
+.boot{z-index:390;background:#f4f9f7}
+.ld-box{text-align:center;max-width:340px;width:100%}
+.ld-anim{position:relative;width:104px;height:104px;margin:0 auto}
+.ld-ring{position:absolute;inset:0;border-radius:50%;border:4px solid #dcece7;border-top-color:#168e79;border-right-color:#fb8b24;animation:ldspin 1.05s linear infinite}
+.ld-core{position:absolute;inset:12px;border-radius:50%;background:linear-gradient(145deg,#0f8672,#25a48d);display:grid;place-items:center;box-shadow:0 10px 26px rgba(22,142,121,.28);animation:ldpulse 1.8s ease-in-out infinite}
+.ld-core img{width:44px;height:44px;object-fit:contain}
+.ld-brand{margin-top:20px;font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#168e79}
+.ld-msg{margin-top:8px;font-size:16px;font-weight:800;color:#173b39;letter-spacing:-.01em}
+.ld-line{height:4px;width:150px;max-width:70%;margin:18px auto 0;border-radius:9px;background:#dcece7;overflow:hidden}
+.ld-line i{display:block;height:100%;width:40%;border-radius:inherit;background:linear-gradient(90deg,#168e79,#fb8b24);animation:ldslide 1.25s ease-in-out infinite}
+.ld-bar{position:fixed;left:0;right:0;top:0;height:3px;z-index:450;opacity:0;pointer-events:none;transition:opacity .2s;overflow:hidden}
+.ld-bar.on{opacity:1}
+.ld-bar i{display:block;height:100%;width:35%;background:linear-gradient(90deg,#168e79,#fb8b24);border-radius:0 3px 3px 0;animation:ldslide 1.1s ease-in-out infinite}
+.toast{z-index:500}
+@keyframes ldspin{to{transform:rotate(360deg)}}
+@keyframes ldpulse{0%,100%{transform:scale(1)}50%{transform:scale(.93)}}
+@keyframes ldslide{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+@keyframes ldfade{from{opacity:0}to{opacity:1}}
+@media(max-width:830px){.ld-anim{width:88px;height:88px}.ld-core img{width:36px;height:36px}.ld-msg{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.ld-ring{animation-duration:2.4s}.ld-core{animation:none}.ld-line i,.ld-bar i{animation-duration:2.4s}}
 </style>
 </head>
 <body>
 
-<div id="bootLoader" class="boot"><div class="boot-box"><div class="spinner lg"></div><div id="bootMsg" style="margin-top:16px;font-weight:800">Memuat sesi Anda…</div><div id="bootActions" class="hidden" style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" onclick="location.reload()">Coba Lagi</button><button class="btn" onclick="tokStore.clear();location.reload()">Masuk Ulang</button></div></div></div>
+<div id="scsLoader" class="ldr" role="status" aria-live="polite"><div class="ld-box"><div class="ld-anim"><span class="ld-ring"></span><span class="ld-core"><img alt=""></span></div><div class="ld-brand">Safety Control System</div><div class="ld-msg">Memuat…</div><div class="ld-line"><i></i></div></div></div>
+<div id="scsBar" class="ld-bar" aria-hidden="true"><i></i></div>
+<div id="bootLoader" class="boot"><div class="boot-box ld-box"><div class="ld-anim"><span class="ld-ring"></span><span class="ld-core"><img alt=""></span></div><div class="ld-brand">Safety Control System</div><div id="bootMsg" class="ld-msg">Memuat sesi Anda…</div><div class="ld-line"><i></i></div><div id="bootActions" class="hidden" style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" onclick="location.reload()">Coba Lagi</button><button class="btn" onclick="tokStore.clear();location.reload()">Masuk Ulang</button></div></div></div>
 <script>try{if(localStorage.getItem("fsToken")||sessionStorage.getItem("fsToken"))document.getElementById("bootLoader").classList.add("show")}catch(e){}</script>
 <div id="loginScreen" class="login">
  <div class="login-card">
@@ -1973,7 +1999,22 @@ function setApiUrl(){
  if(!t.startsWith("https://")||!t.includes("/exec"))return toast("URL tidak valid");
  API_URL=t;localStorage.setItem("fsApiUrl",t);setSync("ok");toast("Koneksi disimpan")
 }
+const Loading=(function(){let n=0,t=null,hideT=null,shownAt=0,bars=0;const el=()=>document.getElementById("scsLoader");
+ function setMsg(m){const e=el();if(e&&m){const x=e.querySelector(".ld-msg");if(x)x.textContent=m}}
+ return{
+  show(msg,delay){const e=el();if(!e)return;n++;setMsg(msg);if(n>1||e.classList.contains("show")){clearTimeout(hideT);return}
+   clearTimeout(hideT);const go=()=>{e.classList.add("show");shownAt=Date.now()};delay===0?go():(t=setTimeout(go,delay==null?220:delay))},
+  hide(){const e=el();if(!e)return;n=Math.max(0,n-1);if(n>0)return;clearTimeout(t);if(e.classList.contains("show")){const w=Math.max(0,420-(Date.now()-shownAt));hideT=setTimeout(()=>e.classList.remove("show"),w)}},
+  bar(on){const b=document.getElementById("scsBar");if(!b)return;bars=Math.max(0,bars+(on?1:-1));b.classList.toggle("on",bars>0)}
+ }})();
+(function(){try{const src=(document.querySelector(".company img.scs-mk")||{}).src;if(src)document.querySelectorAll(".ld-core img").forEach(i=>i.src=src)}catch(e){}})();
+const LD_MSG={login:"Memverifikasi akun…",loadAll:"Memuat data…",guestAsset:"Memuat profil asset…",logout:"Mengeluarkan akun…",changePassword:"Menyimpan password…",forgot:"Memproses permintaan…",adminResetPw:"Mereset password…",swapAsset:"Menukar asset…",assignAssets:"Menyimpan penugasan…",history:"Memuat riwayat…"};
 async function api(action,payload,auth=true){
+ if(action==="batch"){Loading.bar(1);try{return await api0(action,payload,auth)}finally{Loading.bar(0)}}
+ const m=LD_MSG[action];if(!m)return api0(action,payload,auth);
+ Loading.show(m);try{return await api0(action,payload,auth)}finally{Loading.hide()}
+}
+async function api0(action,payload,auth=true){
  if(!apiReady())throw new Error("URL Google Sheets belum diatur");
  const body=JSON.stringify(Object.assign({action,token:auth?TOKEN:undefined},payload||{}));
  let res;try{res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body,redirect:"follow"})}catch(e){throw new Error("Tidak dapat terhubung ke server Google Sheets")}
@@ -2142,7 +2183,7 @@ function showApp(){
  if(me.role==="inspector"){go("inspection")}else{let lp="";try{lp=window.__restorePage?(localStorage.getItem("fsPage")||""):""}catch(e){}window.__restorePage=false;go(lp&&titles[lp]?lp:"dashboard")}
  let q=new URLSearchParams(location.search).get("asset");if(q&&me.role==="admin"){go("inventory");assetSearch.value=q;renderInventory()}
 }
-async function logout(){try{await api("logout")}catch(e){}tokStore.clear();tokStore.clear();location.reload()}
+async function logout(){Loading.show("Keluar dari akun…",0);try{await api("logout")}catch(e){}tokStore.clear();tokStore.clear();location.reload()}
 function populatePlantFilter(){let list=PLANTS.filter(p=>me.plant==="ALL"||p.id===me.plant);plantFilter.innerHTML=(me.plant==="ALL"?'<option value="ALL">Semua Plant</option>':"")+list.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");aPlant.innerHTML=list.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");if(me.plant!=="ALL")plantFilter.value=me.plant;populateAreaOptions()}
 function populateAreaOptions(selectedArea=""){let p=aPlant.value||"PLANT-1",areas=SUBAREAS[p]||[];aArea.innerHTML=areas.map(x=>`<option value="${x}">${x}</option>`).join("");if(selectedArea&&!areas.includes(selectedArea))aArea.insertAdjacentHTML("beforeend",`<option value="${esc(selectedArea)}">${esc(selectedArea)}</option>`);if(selectedArea)aArea.value=selectedArea}
 
@@ -3045,7 +3086,7 @@ function cfgSchedToggle(){cfgSchedBox.classList.toggle("hidden",cfgSchedMode.val
 function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderJobList,renderAssignSummary,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
 
 function bootHide(){bootLoader.classList.remove("show")}
-function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".spinner").style.display="none"}
+function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".ld-anim").style.display="none";bootLoader.querySelector(".ld-line").style.display="none"}
 (async function(){
  let guestId=new URLSearchParams(location.search).get("guestAsset");
  if(guestId){bootHide();showGuestAsset(guestId);return}
