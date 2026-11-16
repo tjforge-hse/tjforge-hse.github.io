@@ -151,6 +151,24 @@ body[data-theme="normal"]{--bg:#f4f8f7;--ink:#12283c;--sub:#73859a;--line:#e6edf
 @media(max-width:440px){.employee-filter-grid,.profile-facts{grid-template-columns:1fr}.profile-metrics{gap:6px}.profile-metric{padding:11px 9px}.profile-metric b{font-size:22px}.profile-reminder-line{grid-template-columns:1fr}.profile-reminder-line>span:nth-child(2){grid-column:auto}}
 
 .busy{position:fixed;inset:0;z-index:70;background:rgba(255,255,255,.55);display:grid;place-items:center;backdrop-filter:blur(2px)}
+
+.loader{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:radial-gradient(circle at 50% 38%,#ffffff 0,#eaf6f2 55%,#d6ece5 100%);transition:opacity .35s ease,visibility .35s}
+.loader.off{opacity:0;visibility:hidden;pointer-events:none}
+.loader-box{width:min(420px,88vw);text-align:center;color:#0b4a44}
+.loader svg{width:100%;height:auto;overflow:visible}
+.loader .ttl{font-weight:850;font-size:18px;letter-spacing:.2px;margin:6px 0 2px}
+.loader .tip{height:22px;font-size:14px;color:#4c7d76;font-weight:650;position:relative}
+.loader .tip span{position:absolute;left:0;right:0;opacity:0;animation:tipfade 7.5s infinite}
+.loader .tip span:nth-child(2){animation-delay:2.5s}.loader .tip span:nth-child(3){animation-delay:5s}
+@keyframes tipfade{0%,3%{opacity:0;transform:translateY(5px)}8%,28%{opacity:1;transform:none}33%,100%{opacity:0;transform:translateY(-5px)}}
+.ld-bob{animation:ldbob .5s ease-in-out infinite alternate}@keyframes ldbob{to{transform:translateY(-2.5px)}}
+.ld-wheel{transform-box:fill-box;transform-origin:center;animation:ldspin .55s linear infinite}@keyframes ldspin{to{transform:rotate(360deg)}}
+.ld-road{animation:ldroad .5s linear infinite}@keyframes ldroad{to{stroke-dashoffset:-32}}
+.ld-far{animation:ldfar 2.4s linear infinite}@keyframes ldfar{from{transform:translateX(340px)}to{transform:translateX(-80px)}}
+.ld-far2{animation:ldfar 3.6s linear infinite;animation-delay:-1.4s}
+.ld-speed{animation:ldspeed .6s linear infinite}@keyframes ldspeed{0%{opacity:0;transform:translateX(14px)}40%{opacity:.9}100%{opacity:0;transform:translateX(-22px)}}
+.ld-speed.b{animation-delay:.2s}.ld-speed.c{animation-delay:.4s}
+@media(prefers-reduced-motion:reduce){.loader *{animation-duration:6s!important}}
 .spin{width:44px;height:44px;border-radius:50%;border:4px solid #cfe9e2;border-top-color:#0e997e;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 .secret-box{display:grid;place-items:center;gap:6px;border:1px dashed #bfd9d1;border-radius:15px;background:#f6fcf9;padding:22px;margin:14px 0}
 .secret-box b{font-size:30px;letter-spacing:.18em;color:#0a6e60;word-break:break-all;text-align:center}
@@ -191,6 +209,34 @@ body[data-theme="normal"]{--bg:#f4f8f7;--ink:#12283c;--sub:#73859a;--line:#e6edf
   <main class="workspace"><div class="topbar"><div><h1 id="pageTitle"></h1><p id="pageSub"></p></div><div class="top-actions"><select id="plantFilter" class="select" aria-label="Filter plant" style="width:152px"></select><div class="user-chip" id="userChip"></div><button class="btn small" data-action="logout">Keluar</button></div></div><div id="pageContent"></div><footer>© 2026 PT TJForge Indonesia · Safety Control System</footer></main>
 </div>
 <div id="overlay" class="overlay" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalBody"></div></div>
+<div class="loader" id="loader" role="status" aria-live="polite" aria-label="Memuat"><div class="loader-box">
+<svg viewBox="0 0 320 175" aria-hidden="true">
+ <g class="ld-far" opacity=".55"><rect x="0" y="86" width="5" height="56" rx="2" fill="#9cc9bf"/><circle cx="2.5" cy="82" r="9" fill="#bfe3da"/></g>
+ <g class="ld-far ld-far2" opacity=".45"><rect x="0" y="100" width="4" height="42" rx="2" fill="#9cc9bf"/><circle cx="2" cy="97" r="7" fill="#bfe3da"/></g>
+ <rect x="0" y="143" width="320" height="5" rx="2.5" fill="#12362f"/>
+ <line class="ld-road" x1="-20" y1="158" x2="340" y2="158" stroke="#7fb3a8" stroke-width="4" stroke-linecap="round" stroke-dasharray="18 14"/>
+ <g stroke="#ff8619" stroke-width="3" stroke-linecap="round"><line class="ld-speed" x1="40" y1="78" x2="68" y2="78"/><line class="ld-speed b" x1="28" y1="96" x2="62" y2="96"/><line class="ld-speed c" x1="46" y1="114" x2="70" y2="114"/></g>
+ <g class="ld-bob">
+  <g class="ld-wheel"><circle cx="95" cy="121" r="21" fill="#fff" stroke="#12362f" stroke-width="6"/><path d="M95 105v32M79 121h32M84 110l22 22M106 110L84 132" stroke="#12362f" stroke-width="2" stroke-linecap="round"/></g>
+  <g class="ld-wheel"><circle cx="225" cy="121" r="21" fill="#fff" stroke="#12362f" stroke-width="6"/><path d="M225 105v32M209 121h32M214 110l22 22M236 110L214 132" stroke="#12362f" stroke-width="2" stroke-linecap="round"/></g>
+  <path d="M100 118c8-8 14-16 18-22h80l14 25" fill="none" stroke="#12362f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M104 96c8-14 44-18 70-8l26 6 10 20H116z" fill="#ff8619"/>
+  <rect x="108" y="82" width="52" height="10" rx="5" fill="#12362f"/>
+  <path d="M205 90l20 31" stroke="#12362f" stroke-width="6" stroke-linecap="round"/>
+  <path d="M203 84l14-6" stroke="#12362f" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="218" cy="94" r="5" fill="#ffd54a" stroke="#12362f" stroke-width="1.5"/>
+  <path d="M132 84l18-34" stroke="#17405f" stroke-width="15" stroke-linecap="round"/>
+  <path d="M138 72l12-21" stroke="#dfff3a" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+  <path d="M150 58l30 8 22 12" fill="none" stroke="#17405f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="203" cy="80" r="4.5" fill="#f2c9a0"/>
+  <path d="M130 86l30 14-4 20" fill="none" stroke="#0f2f46" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="150" y="119" width="17" height="6" rx="3" fill="#12362f"/>
+  <g><circle cx="155" cy="38" r="17" fill="#ff8619"/><path d="M158 31h15c0 8-5 14-15 14z" fill="#12362f"/><path d="M158 33h12" stroke="#bfe9ff" stroke-width="2" stroke-linecap="round"/><path d="M142 40a15 15 0 0 1 8-12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><path d="M146 50c4 4 10 5 14 3" stroke="#12362f" stroke-width="2" stroke-linecap="round" fill="none"/></g>
+ </g>
+</svg>
+<div class="ttl" id="loaderTitle">Memuat Safety Riding…</div>
+<div class="tip"><span>🪖 Helm terpasang, aman di jalan</span><span>🪪 SIM berlaku, berkendara tenang</span><span>📄 STNK &amp; pajak aktif, bebas khawatir</span></div>
+</div></div>
 <div class="busy hidden" id="busy" role="status" aria-label="Memproses"><div class="spin"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -233,7 +279,10 @@ function rid(){return 'r'+Math.random().toString(36).slice(2,9)}
 function emptyDb(){return{employees:[],licenses:[],vehicles:[],requests:[],verifications:[],settings:{critical:30,watch:60}}}
 function ensureQrToken(){}
 function save(){}
-function busy(on){document.getElementById('busy').classList.toggle('hidden',!on)}
+let _busyT=null,_busyN=0;
+function loaderShow(t){const l=document.getElementById('loader');document.getElementById('loaderTitle').textContent=t||'Memproses…';l.classList.remove('off')}
+function loaderHide(){document.getElementById('loader').classList.add('off')}
+function busy(on){if(on){_busyN++;if(_busyN===1)_busyT=setTimeout(()=>loaderShow('Memproses…'),250)}else{_busyN=Math.max(0,_busyN-1);if(_busyN===0){clearTimeout(_busyT);loaderHide()}}}
 async function api(action,payload={}){
  if(!/^https?:\/\//.test(API_URL))throw new Error('Server belum dihubungkan. Hubungi HSE.');
  let j;
@@ -458,9 +507,11 @@ document.addEventListener('click',async e=>{
  else if(a==='adminReset'){if(!confirm('Reset password akun ini?'))return;await run(async()=>{const r=await api('resetAdminPassword',{username:b.dataset.user});showSecret('Password Baru','Username: '+E(r.username),'<b>Berikan password ini ke pemilik akun.</b> Password tidak dapat dilihat lagi setelah jendela ini ditutup.',r.password)})}
 });
 async function init(){
+ const t0=Date.now();
  try{const s=sessionStorage.getItem(SK_S),tk=sessionStorage.getItem(SK_T);if(s&&tk){SESSION=tk;session=JSON.parse(s);await refresh();view=session.type==='admin'?'overview':'personal'}}catch(e){clearAuth()}
  if(session)render();else authRender();
  handleQrHash();window.addEventListener('hashchange',handleQrHash);
+ setTimeout(loaderHide,Math.max(0,1600-(Date.now()-t0)));
 }
 init();
 </script>
