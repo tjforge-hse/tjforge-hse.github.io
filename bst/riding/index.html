@@ -336,7 +336,7 @@ async function login(form){
   await refresh();view=session.type==='admin'?'overview':'personal';authPage='login';filterPlant='all';render();toast('Berhasil masuk');
  });
 }
-async function doLogout(){try{await api('logout')}catch(e){}clearAuth();db=emptyDb();authPage='login';authRender();toast('Anda telah keluar')}
+async function doLogout(){loaderShow('Sedang keluar…');const t0=Date.now();try{await api('logout')}catch(e){}clearAuth();db=emptyDb();authPage='login';authRender();await new Promise(r=>setTimeout(r,Math.max(0,1300-(Date.now()-t0))));loaderHide();toast('Anda telah keluar')}
 async function publicSubmit(form){
  const f=new FormData(form),nik=String(f.get('nik')||'').trim().toUpperCase(),payload={};
  for(const [k,v] of f.entries()){if(!['nik','requester','target','note','website'].includes(k))payload[k]=String(v).trim()}
