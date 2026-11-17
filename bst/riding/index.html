@@ -172,6 +172,11 @@ body[data-theme="normal"]{--bg:#f4f8f7;--ink:#12283c;--sub:#73859a;--line:#e6edf
 
 .photo-field .photo-preview{display:flex;align-items:center;gap:12px;margin-top:8px}
 .photo-field .photo-preview img{width:96px;height:72px;object-fit:cover;border-radius:12px;border:1px solid #d7e4e0;background:#f3f7f6}
+.photo-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+#camShot{position:fixed;inset:0;z-index:9999;background:rgba(5,15,25,.85);display:flex;align-items:center;justify-content:center;padding:16px}
+#camShot .cam-box{background:#0b1620;border-radius:18px;padding:12px;max-width:760px;width:100%}
+#camShot video{width:100%;max-height:70vh;border-radius:12px;background:#000}
+#camShot .cam-actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
 .photo-field input[type=file]{padding:10px;background:#f7fbfa;border:1.5px dashed #9cc9bf;border-radius:14px;width:100%;font:inherit}
 
 .photo-guide{margin:2px 0 10px;border:1px solid #cfe5df;border-radius:14px;background:#f4faf8;overflow:hidden}
@@ -350,14 +355,25 @@ function photoGuide(kind,open=true){
   unit:{t:'Foto kendaraan: tampak depan menyamping',ill:`<div><div>${ILLU.motor}</div><div class="pg-cap">Contoh motor</div></div><div><div>${ILLU.mobil}</div><div class="pg-cap">Contoh mobil</div></div>`,ul:li(['Ambil dari <b>depan menyamping (serong depan)</b> sehingga <b>plat nomor terbaca</b> dan <b>body samping</b> kendaraan terlihat','Seluruh kendaraan masuk di foto, dari roda depan sampai roda belakang'])+no(['Plat nomor tidak terlihat atau terlalu kecil untuk dibaca','Kendaraan terpotong atau tertutup orang/benda lain'])}
  }[kind];
  return `<details class="photo-guide" ${open?'open':''}><summary>${cfg.t} — lihat contoh yang benar</summary><div class="pg-body"><div class="pg-ill">${cfg.ill}</div><ul>${cfg.ul}</ul></div></details>`}
-function photoField(required,label,guide='',name='photoData'){return `<div class="field span2 photo-field"><span>${label}${required?' *':' (opsional)'}</span>${guide}<input type="file" accept="image/*" data-photo-input><input type="hidden" name="${name}"><div class="photo-preview hidden"><img alt="Pratinjau foto"><button type="button" class="btn small" data-action="photoClear">Ganti foto</button></div><small class="field-help">Ukuran foto otomatis dikecilkan. Hanya HSE dan pemilik data yang bisa melihat.</small></div>`}
+function photoField(required,label,guide='',name='photoData'){return `<div class="field span2 photo-field"><span>${label}${required?' *':' (opsional)'}</span>${guide}<div class="photo-btns"><button type="button" class="btn small" data-action="photoShoot">${ico('scan',15)} Ambil foto</button><button type="button" class="btn small" data-action="photoPick">${ico('inbox',15)} Pilih dari galeri</button></div><input type="file" accept="image/*" capture="environment" data-photo-input data-cam hidden><input type="file" accept="image/*" data-photo-input data-gal hidden><input type="hidden" name="${name}"><div class="photo-preview hidden"><img alt="Pratinjau foto"><button type="button" class="btn small" data-action="photoClear">Ganti foto</button></div><small class="field-help">Ukuran foto otomatis dikecilkan. Hanya HSE dan pemilik data yang bisa melihat.</small></div>`}
 function compressImage(file,maxSide=1400){return new Promise((res,rej)=>{if(!/^image\//.test(file.type)){rej(new Error('Pilih berkas berupa foto.'));return}
  const url=URL.createObjectURL(file),img=new Image();
  img.onload=()=>{URL.revokeObjectURL(url);let w=img.naturalWidth,h=img.naturalHeight;const sc=Math.min(1,maxSide/Math.max(w,h));w=Math.round(w*sc);h=Math.round(h*sc);const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);let q=.82,d=c.toDataURL('image/jpeg',q);while(d.length>1200000&&q>.45){q-=.1;d=c.toDataURL('image/jpeg',q)}res(d)};
  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Foto tidak bisa dibaca. Coba foto lain.'))};img.src=url})}
-document.addEventListener('change',async e=>{const inp=e.target;if(!inp.matches||!inp.matches('[data-photo-input]'))return;const box=inp.closest('.photo-field'),hid=box.querySelector('input[type=hidden]'),pv=box.querySelector('.photo-preview');hid.value='';pv.classList.add('hidden');const f=inp.files&&inp.files[0];if(!f)return;
- try{const d=await compressImage(f);hid.value=d;pv.querySelector('img').src=d;pv.classList.remove('hidden')}catch(err){inp.value='';toast(err.message||'Foto tidak bisa dibaca.')}});
-function photoClear(btn){const box=btn.closest('.photo-field');box.querySelector('input[type=hidden]').value='';box.querySelector('[data-photo-input]').value='';box.querySelector('.photo-preview').classList.add('hidden')}
+async function photoSet(box,f,inp){const hid=box.querySelector('input[type=hidden]'),pv=box.querySelector('.photo-preview');hid.value='';pv.classList.add('hidden');if(!f)return;
+ try{const d=await compressImage(f);hid.value=d;pv.querySelector('img').src=d;pv.classList.remove('hidden')}catch(err){if(inp)inp.value='';toast(err.message||'Foto tidak bisa dibaca.')}}
+document.addEventListener('change',e=>{const inp=e.target;if(!inp.matches||!inp.matches('[data-photo-input]'))return;photoSet(inp.closest('.photo-field'),inp.files&&inp.files[0],inp)});
+let camStream=null;
+function camStop(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}const o=document.getElementById('camShot');if(o)o.remove()}
+async function photoShoot(btn){const box=btn.closest('.photo-field');
+ if(matchMedia('(pointer:coarse)').matches||!navigator.mediaDevices?.getUserMedia){box.querySelector('[data-cam]').click();return}
+ try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false})}catch(err){toast('Kamera tidak dapat diakses. Izinkan akses kamera, atau pilih foto dari galeri.');return}
+ const o=document.createElement('div');o.id='camShot';o.innerHTML='<div class="cam-box"><video autoplay playsinline muted></video><div class="cam-actions"><button type="button" class="btn" data-action="camCancel">Batal</button><button type="button" class="btn primary" data-action="camSnap">Ambil foto</button></div></div>';document.body.appendChild(o);
+ const v=o.querySelector('video');v.srcObject=camStream;o._box=box}
+async function camSnap(){const o=document.getElementById('camShot');if(!o)return;const v=o.querySelector('video');if(!v.videoWidth){toast('Kamera belum siap, coba lagi.');return}
+ const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);const box=o._box;
+ const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));camStop();await photoSet(box,new File([blob],'foto.jpg',{type:'image/jpeg'}))}
+function photoClear(btn){const box=btn.closest('.photo-field');box.querySelector('input[type=hidden]').value='';box.querySelectorAll('[data-photo-input]').forEach(i=>i.value='');box.querySelector('.photo-preview').classList.add('hidden')}
 async function viewPhoto(kind,id,slot){await run(async()=>{const r=await api('getPhoto',{kind,id,slot});let v=document.getElementById('photoView');if(v)v.remove();v=document.createElement('div');v.id='photoView';v.innerHTML=`<div class="pv-box"><div class="pv-cap">${slot==='unit'?'Foto kendaraan (tampak depan menyamping)':kind==='license'?'Foto SIM':kind==='vehicle'?'Foto STNK (TNKB &amp; pajak)':'Foto lampiran pengajuan'}</div><img alt="Foto dokumen"><button type="button">Tutup</button></div>`;v.querySelector('img').src=r.image;v.addEventListener('click',ev=>{if(ev.target===v||ev.target.tagName==='BUTTON')v.remove()});document.body.appendChild(v)})}
 const photoBtn=(kind,id,label='Lihat foto',cls='btn small',slot='')=>`<button class="${cls}" data-action="viewPhoto" data-kind="${kind}" data-id="${E(id)}" data-slot="${slot}">${ico('search',14)} ${label}</button>`;
 function publicFields(kind,mode){const header=fields([['nik','NIK pemilik / karyawan','text',null,'']]);const note=`<label class="field span2"><span>Keterangan / alasan perubahan (opsional)</span><textarea class="textarea" name="note" placeholder="Contoh: perpanjangan SIM, ganti nomor polisi, karyawan baru"></textarea></label>`;
@@ -604,6 +620,10 @@ document.addEventListener('click',async e=>{
  else if(a==='sendMailAll'){const keys=(follow?.items||[]).filter(x=>!x.sentAt&&x.hasEmail).map(x=>x.key);if(!keys.length)return;if(!confirm('Kirim email pengingat untuk '+keys.length+' dokumen sekarang?'))return;await run(async()=>{const r=await api('sendReminders',{keys});await loadFollow();toast(mailResultText(r.result))})}
  else if(a==='testMail'){const v=document.getElementById('mailTest')?.value.trim()||'';await run(async()=>{await api('testEmail',{email:v});toast('Email tes terkirim. Cek kotak masuk (atau Spam).')})}
  else if(a==='editEmail'){const e=employeeOwn();modalHtml('Email','Dipakai HSE untuk mengirim pengingat SIM, pajak, dan TNKB',`<form id="emailForm"><div class="fields"><label class="field"><span>Alamat email</span><input class="input" type="email" name="email" value="${E(e?.email||'')}" placeholder="nama@email.com"></label></div><div class="modal-actions"><button class="btn" type="button" data-action="closeModal">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`)}
+ else if(a==='photoShoot'){await photoShoot(b)}
+ else if(a==='photoPick'){b.closest('.photo-field').querySelector('[data-gal]').click()}
+ else if(a==='camSnap'){await camSnap()}
+ else if(a==='camCancel'){camStop()}
  else if(a==='stkAll'){stkVehicles().forEach(v=>stkSel.add(v.id));const bd=document.getElementById('stkBody');if(bd)bd.innerHTML=stkRows();stkCount()}
  else if(a==='stkNone'){stkSel.clear();const bd=document.getElementById('stkBody');if(bd)bd.innerHTML=stkRows();stkCount()}
  else if(a==='stkPrint'){const vs=db.vehicles.filter(v=>stkSel.has(v.id));if(!vs.length){toast('Pilih kendaraan terlebih dahulu.');return}await run(()=>stkPrint(vs))}
