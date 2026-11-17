@@ -178,6 +178,11 @@ body[data-theme="normal"]{--bg:#f4f8f7;--ink:#12283c;--sub:#73859a;--line:#e6edf
 .row-item.req-add{border-left:5px solid #3b82f6}
 .row-item.req-upd{border-left:5px solid #8b5cf6}
 .mode-sub{color:#6d28d9;margin-top:2px}
+.row-item.req-add,.row-item.req-upd{flex-wrap:wrap}
+.row-item.req-add .row-main,.row-item.req-upd .row-main{flex:1 1 230px;min-width:min(100%,230px)}
+.row-item.req-add .row-main b,.row-item.req-upd .row-main b{overflow-wrap:normal}
+.mode-tag{white-space:nowrap}
+@media(max-width:600px){.row-item.req-add>div:last-child,.row-item.req-upd>div:last-child{flex:1 1 100%}.row-item.req-add .item-icon,.row-item.req-upd .item-icon{display:none}}
 .photo-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 #camShot{position:fixed;inset:0;z-index:9999;background:rgba(5,15,25,.85);display:flex;align-items:center;justify-content:center;padding:16px}
 #camShot .cam-box{background:#0b1620;border-radius:18px;padding:12px;max-width:760px;width:100%}
