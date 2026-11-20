@@ -663,7 +663,7 @@ tbody tr:hover td{background:#fafdfc}
  <div class="formgrid"><div><label>Aturan jadwal</label><select id="cfgSchedMode" class="select" onchange="cfgSchedToggle()"><option value="">Tidak ada (manual lewat Next Due)</option><option value="monthly">Bulanan dengan jendela tanggal</option></select></div><div id="cfgSchedBox" class="hidden"><label>Boleh diinspeksi tanggal … sampai batas tanggal …</label><div style="display:flex;gap:8px;align-items:center"><input id="cfgSchedStart" class="input" type="number" min="1" max="28" value="1" style="max-width:90px"><span>s/d</span><input id="cfgSchedEnd" class="input" type="number" min="1" max="28" value="5" style="max-width:90px"></div></div></div>
  <small class="muted">Contoh: tanggal 1 s/d 5 berarti setiap bulan asset jenis ini harus sudah diinspeksi paling lambat tanggal 5. Inspeksi yang di-Reject tidak dihitung. Tanggal diizinkan 1–28.</small>
  <div class="rv-h">Pilihan frekuensi <span class="muted" style="font-weight:400">(nama + interval hari)</span></div><div id="cfgFreqs"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddFreq()">＋ Frekuensi</button>
- <div class="rv-h">Ilustrasi referensi</div><div class="cfg-illus"><select id="cfgIllus" class="select" onchange="cfgIllusShow()"><option value="">Otomatis (sesuai jenis / media)</option><option value="gauge">APAR Dry Chemical – Pressure Gauge</option><option value="cartridge">APAR Dry Chemical – Cartridge</option><option value="co2">APAR CO₂</option><option value="none">Tanpa ilustrasi</option></select><div id="cfgIllusPrev"></div><small class="muted">Ditampilkan kepada inspector di atas checklist.</small></div>
+ <div class="rv-h">Ilustrasi referensi</div><div class="cfg-illus"><select id="cfgIllus" class="select" onchange="cfgIllusShow()"><option value="">Otomatis (sesuai jenis / media)</option><option value="gauge">APAR Dry Chemical – Pressure Gauge</option><option value="cartridge">APAR Dry Chemical – Cartridge</option><option value="co2">APAR CO₂</option><option value="tandu">Scoop Stretcher (Tandu)</option><option value="none">Tanpa ilustrasi</option></select><div id="cfgIllusPrev"></div><small class="muted">Ditampilkan kepada inspector di atas checklist.</small></div>
  <div class="rv-h">Item checklist <span class="muted" style="font-weight:400">(item inspeksi + standar yang dianggap OK)</span></div><div style="margin:4px 0"><button class="btn soft small" onclick="cfgFillStd()">✨ Isi standar contoh untuk yang masih kosong</button></div><div id="cfgItems"></div><button class="btn soft small" style="margin-top:8px" onclick="cfgAddItem()">＋ Item</button>
  <div id="cfgMsg" class="notice danger hidden" style="margin-top:12px"></div>
  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><button class="btn" onclick="cfgReset()">↺ Kembalikan ke standar bawaan</button><span style="display:flex;gap:8px"><button class="btn" onclick="closeModal('cfgModal')">Batal</button><button class="btn success" onclick="cfgSave()">Simpan</button></span></div>
@@ -2971,12 +2971,17 @@ function exportHistory(){
 
 /* ===== PENGATURAN CHECKLIST & FREKUENSI (edit: admin saja; semua role memakai hasilnya) ===== */
 const DEFAULT_FREQS=[{name:"Daily",days:1},{name:"Monthly",days:30},{name:"Annual",days:365}];
-const ILLUS={gauge:{label:"APAR Dry Chemical – Pressure Gauge",src:"ilustrasi-apar-gauge.png"},cartridge:{label:"APAR Dry Chemical – Cartridge",src:"ilustrasi-apar-cartridge.png"},co2:{label:"APAR CO₂",src:"ilustrasi-apar-co2.png"}};
+const ILLUS={gauge:{label:"APAR Dry Chemical – Pressure Gauge",src:"ilustrasi-apar-gauge.png"},cartridge:{label:"APAR Dry Chemical – Cartridge",src:"ilustrasi-apar-cartridge.png"},co2:{label:"APAR CO₂",src:"ilustrasi-apar-co2.png"},tandu:{label:"Scoop Stretcher GEA YDC-4A",src:"ilustrasi-tandu.png"}};
 function illusKey(type,media,tpl){
  const m=(tpl&&tpl.illus)||"";if(m==="none")return null;if(ILLUS[m])return m;
  const t=((type||"")+" "+(media||"")).toLowerCase();
- if(/co2|co₂|karbon/.test(t))return "co2";if(/cartridge|catridge|catrit/.test(t))return "cartridge";if(/apar|powder|dry chemical|serbuk/.test(t))return "gauge";return null}
+ if(/tandu|stretcher/.test(t))return "tandu";if(/co2|co₂|karbon/.test(t))return "co2";if(/cartridge|catridge|catrit/.test(t))return "cartridge";if(/apar|powder|dry chemical|serbuk/.test(t))return "gauge";return null}
 const STD_RULES=[
+ [/strap|sabuk/,"Sabuk pengikat lengkap, tidak robek, dan buckle terkunci kuat."],
+ [/latch|pengunci|kopling/,"Kopling/pengunci kepala dan kaki dapat dikunci dan dilepas dengan mulus, tidak longgar."],
+ [/panjang|teleskop/,"Panjang tandu dapat disetel dan pengunci panjang terkunci; tandu tetap lurus."],
+ [/belahan|dipisah|disambung/,"Kedua belahan scoop dapat dipisah dan disambung kembali tanpa tersendat."],
+ [/rangka|frame|aluminium/,"Rangka aluminium tidak bengkok, retak, atau penyok; sambungan dan baut tidak berkarat."],
  [/pressure gauge|gauge|tekanan/,"Jarum pressure gauge berada di zona hijau."],
  [/serbuk|bolak|balik/,"Serbuk tidak menggumpal: tabung dibolak-balik 3x dan serbuk terasa bergerak bebas di dalam."],
  [/berat|timbang/,"Berat tabung sesuai berat pada label; penurunan berat maksimal 10%."],
