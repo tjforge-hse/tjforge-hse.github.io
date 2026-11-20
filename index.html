@@ -2034,7 +2034,7 @@ async function api0(action,payload,auth=true){
 function setSync(st){const b=document.getElementById("syncBadge");if(!b)return;
  const m={ok:["tag ok","● Tersinkron"],busy:["tag warn","⟳ Menyimpan…"],err:["tag bad","⚠ Gagal sinkron"],off:["tag info","○ Belum terhubung"]}[st]||["tag info","—"];b.className=m[0];b.textContent=m[1]}
 function takeSnap(){SNAP={};for(const t in TABLES){SNAP[t]={};(DB[t]||[]).forEach(r=>{const c=Object.assign({},r);delete c.password;SNAP[t][r[TABLES[t]]]=JSON.stringify(c)})}}
-async function pullAll(){const r=await api("loadAll");DB=Object.assign(emptyDB(),r.data);takeSnap();try{if(DB.assets)localStorage.setItem("fsAssetCount",String(DB.assets.length))}catch(e){}}
+async function pullAll(silent){const r=await (silent?api0("loadAll"):api("loadAll"));DB=Object.assign(emptyDB(),r.data);takeSnap();try{if(DB.assets)localStorage.setItem("fsAssetCount",String(DB.assets.length))}catch(e){}}
 function showLoginAssetCount(n){const b=document.getElementById("loginAssetCount"),l=document.getElementById("loginAssetLbl");if(!b||!(n>=0))return;b.textContent=Number(n).toLocaleString("id-ID");l.textContent="unit APAR, hydrant & alat K3 dalam pengawasan";b.parentNode.classList.add("has-count")}
 (function(){try{const c=localStorage.getItem("fsAssetCount");if(c!==null)showLoginAssetCount(+c)}catch(e){}})();
 function pendingOps(){const ops=[];for(const t in TABLES){const k=TABLES[t];(DB[t]||[]).forEach(r=>{const s=JSON.stringify(r);if(SNAP[t][r[k]]!==s&&INFLIGHT[t+"|"+r[k]]!==s)ops.push({table:t,record:r,_s:s})})}return ops}
@@ -2062,13 +2062,13 @@ async function flush(){
   if(e.code==="AUTH"||e.code==="MUSTCHANGE"){toast(e.message);setTimeout(()=>{tokStore.clear();location.reload()},1500)}
   else{if(syncFail===1)toast("Gagal menyimpan ke Google Sheets: "+e.message);setSync("err");setTimeout(flush,10000)}
  }finally{syncBusy=false}
- if(needPull){try{await pullAll();renderAll()}catch(e){}}
+ if(needPull){try{await pullAll(true);renderAll()}catch(e){}}
  if(pendingOps().length)syncSoon();else if(!syncFail)setSync("ok")
 }
 setInterval(async()=>{
  if(!me||!TOKEN||syncBusy||selected||document.querySelector(".modal.open"))return;
  if(pendingOps().length)return;
- try{await pullAll();renderAll();if(!syncFail)setSync("ok")}catch(e){if(e.code==="AUTH"||e.code==="MUSTCHANGE"){toast(e.message);setTimeout(()=>{tokStore.clear();location.reload()},1500)}else setSync("err")}
+ try{await pullAll(true);renderAll();if(!syncFail)setSync("ok")}catch(e){if(e.code==="AUTH"||e.code==="MUSTCHANGE"){toast(e.message);setTimeout(()=>{tokStore.clear();location.reload()},1500)}else setSync("err")}
 },30000);
 /* ===== END CONNECTOR ===== */
 
