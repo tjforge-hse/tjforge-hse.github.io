@@ -421,7 +421,7 @@ async function camSnap(){const o=document.getElementById('camShot');if(!o)return
 function photoClear(btn){const box=btn.closest('.photo-field');box.querySelector('input[type=hidden]').value='';box.querySelectorAll('[data-photo-input]').forEach(i=>i.value='');box.querySelector('.photo-preview').classList.add('hidden')}
 const photoCache=new Map();
 function fetchPhoto(kind,id,slot){const k=kind+'|'+id+'|'+(slot||'');if(!photoCache.has(k)){const p=api('getPhoto',{kind,id,slot:slot||''}).then(r=>r.image);p.catch(()=>photoCache.delete(k));photoCache.set(k,p)}return photoCache.get(k)}
-function prefetchRequestPhotos(){if(!session||session.type!=='admin')return;const q=[];(db.requests||[]).filter(r=>r.status==='pending').slice(0,12).forEach(r=>{if(r.hasPhoto)q.push(['request',r.id,'']);if(r.hasPhoto2)q.push(['request',r.id,'unit'])});let i=0;const w=async()=>{while(i<q.length){const x=q[i++];try{await fetchPhoto(...x)}catch(e){}}};w();w()}
+function prefetchRequestPhotos(){if(!session||session.type!=='admin')return;const q=[];(db.requests||[]).filter(r=>r.status==='pending').slice(0,20).forEach(r=>{if(r.hasPhoto)q.push(['request',r.id,'']);if(r.hasPhoto2)q.push(['request',r.id,'unit'])});let i=0;const w=async()=>{while(i<q.length){const x=q[i++];try{await fetchPhoto(...x)}catch(e){}}};w();w();w();w()}
 function viewPhoto(kind,id,slot){
  const old=document.getElementById('photoView');if(old)old.remove();
  const rq=kind==='request'?(db.requests||[]).find(x=>x.id===id):null;
@@ -666,14 +666,18 @@ async function changeAdmin(form){
 }
 const REJECT_REASONS=['Foto buram atau tidak terbaca','Foto tidak sesuai contoh (bagian atau sudut salah)','Foto tidak sesuai (data kurang)','Foto STNK belum lengkap: STNK dan Pajak harus ada dalam 1 foto (lihat contoh)','Nomor atau tanggal pada foto tidak terbaca','Data yang diisi tidak sama dengan foto dokumen','Dokumen sudah kedaluwarsa','Data sudah terdaftar (ganda)'];
 function rejectForm(id){const rq=db.requests.find(x=>x.id===id);if(!rq)return;modalHtml('Tolak pengajuan','Karyawan akan melihat alasan ini di portal'+(rq.nik?' (NIK '+E(rq.nik)+')':'')+'.',`<form id="rejectForm" data-id="${E(id)}" class="fields" style="grid-template-columns:1fr;gap:10px"><div class="field"><span>Pilih alasan (boleh lebih dari satu)</span>${REJECT_REASONS.map((t,i)=>`<label style="display:flex;gap:9px;align-items:center;padding:6px 0"><input type="checkbox" name="rr" value="${E(t)}"> <span>${E(t)}</span></label>`).join('')}</div><label class="field"><span>Keterangan tambahan (opsional jika sudah memilih alasan)</span><textarea class="input" name="rnote" rows="3" maxlength="200" placeholder="Contoh: nomor SIM pada foto terpotong, mohon foto ulang dari depan"></textarea></label><div class="modal-actions"><button type="button" class="btn" data-action="closeModal">Batal</button><button class="btn danger" type="submit">Tolak &amp; kirim alasan</button></div></form>`)}
+function mailMsg(m){return m==='terkirim'?'Alasan dikirim ke email karyawan.':m==='tanpa-email'?'Karyawan belum mengisi email; alasan terlihat di portal.':m==='gagal'?'Email gagal terkirim; alasan tetap terlihat di portal.':m==='sudah'?'Email sudah pernah dikirim.':'Alasan terlihat di portal karyawan.'}
+function markReviewed(id,st,reason){const rq=(db.requests||[]).find(x=>x.id===id);if(rq){rq.status=st;if(reason)rq.reason=reason}}
+function bgRefresh(){api('data').then(d=>{db=Object.assign(emptyDb(),d)}).catch(()=>{})}
 async function rejectSubmit(form){const id=form.dataset.id,picked=[...form.querySelectorAll('input[name=rr]:checked')].map(x=>x.value),note=form.rnote.value.trim(),reason=[...picked,note].filter(Boolean).join('. ').slice(0,300);if(reason.length<5){toast('Pilih atau tuliskan alasan penolakan.');return}
- await run(async()=>{const r=await api('review',{id,decision:'reject',reason});closeModal();await refresh();render();const m=r.mail;toast('Pengajuan ditolak. '+(m==='terkirim'?'Alasan dikirim ke email karyawan.':m==='tanpa-email'?'Karyawan belum mengisi email; alasan terlihat di portal.':m==='gagal'?'Email gagal terkirim; alasan tetap terlihat di portal.':'Alasan terlihat di portal karyawan.'))})}
+ await run(async()=>{await api('review',{id,decision:'reject',reason,deferMail:true});closeModal();markReviewed(id,'rejected',reason);render();bgRefresh();toast('Pengajuan ditolak. Mengirim email ke karyawan…');
+  api('notifyReject',{id}).then(x=>toast('Pengajuan ditolak. '+mailMsg(x.mail))).catch(()=>toast('Pengajuan ditolak. Email belum terkirim; alasan tetap terlihat di portal.'))})}
 async function approveRequest(id,decision){
  if(decision==='reject'){rejectForm(id);return}
  await run(async()=>{
-  const r=await api('review',{id,decision});
-  await refresh();render();
-  if(r.pin){const rq=db.requests.find(x=>x.id===id);showSecret('Karyawan Baru Terdaftar','NIK '+E(rq?.nik||''),'<b>Berikan PIN ini ke karyawan.</b> PIN tidak dapat dilihat lagi setelah jendela ini ditutup.',r.pin)}
+  const rq0=db.requests.find(x=>x.id===id),r=await api('review',{id,decision});
+  markReviewed(id,'approved');render();bgRefresh();
+  if(r.pin){const rq=rq0;showSecret('Karyawan Baru Terdaftar','NIK '+E(rq?.nik||''),'<b>Berikan PIN ini ke karyawan.</b> PIN tidak dapat dilihat lagi setelah jendela ini ditutup.',r.pin)}
   else toast(decision==='reject'?'Pengajuan ditolak':'Pengajuan disetujui dan data diperbarui');
  });
 }
