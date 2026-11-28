@@ -2297,10 +2297,12 @@ async function saveAsset(){if(!me||me.role!=="admin")return toast("Hanya ADMIN y
  DB.assets.unshift({id,plant,area,type:aType.value,name:aName.value.trim()||aType.value,media:aMedia.value.trim()||"-",capacity:aCapacity.value.trim()||"-",location:aLocation.value.trim()||"-",due:aDue.value,status:aStatus.value,baseStatus:"",photo:newPhoto});
  saveDB();closeModal("assetModal");renderAll();toast("Asset tersimpan. QR Code dibuat otomatis.");showQR(id)
 }
-function drawQR(text,canvas){const qr=new QRCodeCore(0,QRErrorCorrectLevel.M);qr.addData(text);qr.make();const count=qr.getModuleCount(),quiet=4,size=8,total=(count+quiet*2)*size;canvas.width=canvas.height=total;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,total,total);ctx.fillStyle="#000";for(let r=0;r<count;r++)for(let c=0;c<count;c++)if(qr.isDark(r,c))ctx.fillRect((c+quiet)*size,(r+quiet)*size,size,size)}
+const QR_AN="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+function qrAlnum(str){return{mode:2,getLength:()=>str.length,write(b){for(let i=0;i<str.length;i+=2){if(i+1<str.length)b.put(QR_AN.indexOf(str[i])*45+QR_AN.indexOf(str[i+1]),11);else b.put(QR_AN.indexOf(str[i]),6)}}}}
+function drawQR(text,canvas){const qr=new QRCodeCore(0,QRErrorCorrectLevel.M);const mm=String(text).match(/^[0-9A-Z $%*+\-.\/:]{12,}/);if(mm){qr.dataList.push(qrAlnum(mm[0]));qr.dataCache=null;if(text.length>mm[0].length)qr.addData(text.slice(mm[0].length))}else qr.addData(text);qr.make();const count=qr.getModuleCount(),quiet=4,size=8,total=(count+quiet*2)*size;canvas.width=canvas.height=total;const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,total,total);ctx.fillStyle="#000";for(let r=0;r<count;r++)for(let c=0;c<count;c++)if(qr.isDark(r,c))ctx.fillRect((c+quiet)*size,(r+quiet)*size,size,size)}
 function guestQRPayload(a){
  if(location.protocol==="http:"||location.protocol==="https:"){
-   const u=new URL(location.href);u.search="";u.hash="";u.searchParams.set("guestAsset",a.id);return u.toString()
+   const u=new URL(location.href);return u.origin.toUpperCase()+u.pathname+"?"+encodeURIComponent(a.id)
  }
  return `FIRE-SAFETY-GUEST|ID=${a.id}|PLANT=${plantName(a.plant)}|AREA=${a.area||""}`
 }
@@ -2346,9 +2348,10 @@ function exitGuest(){guestScreen.classList.add("hidden");app.style.display="none
 function openScanModal(expectedId=null){
  window.scanPurpose="inspection";window.expectedScanAssetId=expectedId||null;manualQR.value="";scanStatus.textContent=expectedId?`Scan QR asset ${expectedId}`:"Scan QR asset untuk memulai inspeksi";scanModal.classList.add("open");resetScanUI()
 }
+function qsAssetId(q){const m=String(q||"").match(/^\?([A-Za-z0-9._-]+)$/);return m?m[1]:null}
 function parseAssetFromQR(text){
  let t=(text||"").trim();
- try{let u=new URL(t);let q=u.searchParams.get("guestAsset")||u.searchParams.get("asset");if(q)return q}catch(e){}
+ try{let u=new URL(t);let q=u.searchParams.get("guestAsset")||u.searchParams.get("asset")||qsAssetId(u.search);if(q)return q}catch(e){}
  let m=t.match(/ID=([^|]+)/i);if(m)return m[1].trim();
  if(t.startsWith("FIRE-SAFETY-ASSET:"))return t.split(":").slice(1).join(":").trim();
  if(DB.assets.some(a=>a.id===t))return t;
@@ -3254,7 +3257,7 @@ function pendUpdate(){
 function bootHide(){bootLoader.classList.remove("show")}
 function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".ld-anim").style.display="none";bootLoader.querySelector(".ld-line").style.display="none"}
 (async function(){
- let guestId=new URLSearchParams(location.search).get("guestAsset");
+ let guestId=new URLSearchParams(location.search).get("guestAsset")||qsAssetId(location.search);
  if(guestId){bootHide();showGuestAsset(guestId);return}
  if(!apiReady()){bootHide();setSync("off");return}
  setSync("ok");
