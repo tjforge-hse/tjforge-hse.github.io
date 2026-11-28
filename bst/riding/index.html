@@ -695,6 +695,7 @@ async function changeAdmin(form){
 const REJECT_REASONS=['Foto buram atau tidak terbaca','Foto tidak sesuai contoh (bagian atau sudut salah)','Foto tidak sesuai (data kurang)','Foto STNK belum lengkap: STNK dan Pajak harus ada dalam 1 foto (lihat contoh)','Nomor atau tanggal pada foto tidak terbaca','Data yang diisi tidak sama dengan foto dokumen','Tanggal kedaluwarsa yang diajukan berbeda dengan tanggal pada dokumen','Dokumen sudah kedaluwarsa','Data sudah terdaftar (ganda)'];
 function rejectForm(id){const rq=db.requests.find(x=>x.id===id);if(!rq)return;modalHtml('Tolak pengajuan','Karyawan akan melihat alasan ini di portal'+(rq.nik?' (NIK '+E(rq.nik)+')':'')+'.',`<form id="rejectForm" data-id="${E(id)}" class="fields" style="grid-template-columns:1fr;gap:10px"><div class="field"><span>Pilih alasan (boleh lebih dari satu)</span>${REJECT_REASONS.map((t,i)=>`<label style="display:flex;gap:9px;align-items:center;padding:6px 0"><input type="checkbox" name="rr" value="${E(t)}"> <span>${E(t)}</span></label>`).join('')}</div><label class="field"><span>Keterangan tambahan (opsional jika sudah memilih alasan)</span><textarea class="input" name="rnote" rows="3" maxlength="200" placeholder="Contoh: nomor SIM pada foto terpotong, mohon foto ulang dari depan"></textarea></label><div class="modal-actions"><button type="button" class="btn" data-action="closeModal">Batal</button><button class="btn danger" type="submit">Tolak &amp; kirim alasan</button></div></form>`)}
 function mailMsg(m){return m==='terkirim'?'Alasan dikirim ke email karyawan.':m==='tanpa-email'?'Karyawan belum mengisi email; alasan terlihat di portal.':m==='gagal'?'Email gagal terkirim; alasan tetap terlihat di portal.':m==='sudah'?'Email sudah pernah dikirim.':'Alasan terlihat di portal karyawan.'}
+function mailMsgOk(m){return m==='terkirim'?'Email pemberitahuan dikirim ke karyawan.':m==='tanpa-email'?'Karyawan belum punya email terverifikasi, jadi email tidak dikirim.':m==='gagal'?'Email gagal terkirim; data tetap sudah diperbarui.':m==='kuota'?'Kuota email harian habis, email tidak dikirim.':m==='nonaktif'?'Pengiriman email nonaktif di Pengaturan.':m==='sudah'?'Email sudah pernah dikirim.':'Data sudah diperbarui.'}
 function markReviewed(id,st,reason){const rq=(db.requests||[]).find(x=>x.id===id);if(rq){rq.status=st;if(reason)rq.reason=reason}}
 function bgRefresh(){api('data').then(d=>{db=Object.assign(emptyDb(),d)}).catch(()=>{})}
 async function rejectSubmit(form){const id=form.dataset.id,picked=[...form.querySelectorAll('input[name=rr]:checked')].map(x=>x.value),note=form.rnote.value.trim(),reason=[...picked,note].filter(Boolean).join('. ').slice(0,300);if(reason.length<5){toast('Pilih atau tuliskan alasan penolakan.');return}
@@ -703,10 +704,11 @@ async function rejectSubmit(form){const id=form.dataset.id,picked=[...form.query
 async function approveRequest(id,decision){
  if(decision==='reject'){rejectForm(id);return}
  await run(async()=>{
-  const rq0=db.requests.find(x=>x.id===id),r=await api('review',{id,decision});
+  const rq0=db.requests.find(x=>x.id===id),r=await api('review',{id,decision,deferMail:true});
   markReviewed(id,'approved');render();bgRefresh();
-  if(r.pin){const rq=rq0;showSecret('Karyawan Baru Terdaftar','NIK '+E(rq?.nik||''),'<b>Berikan PIN ini ke karyawan.</b> PIN tidak dapat dilihat lagi setelah jendela ini ditutup.',r.pin)}
-  else toast(decision==='reject'?'Pengajuan ditolak':'Pengajuan disetujui dan data diperbarui');
+  const mailApprove=()=>api('notifyApprove',{id}).then(x=>toast('Pengajuan disetujui. '+mailMsgOk(x.mail))).catch(()=>toast('Pengajuan disetujui. Email pemberitahuan belum terkirim.'));
+  if(r.pin){const rq=rq0;showSecret('Karyawan Baru Terdaftar','NIK '+E(rq?.nik||''),'<b>Berikan PIN ini ke karyawan.</b> PIN tidak dapat dilihat lagi setelah jendela ini ditutup.',r.pin);mailApprove()}
+  else{toast('Pengajuan disetujui dan data diperbarui. Mengirim email ke karyawan…');mailApprove()}
  });
 }
 function csvCell(x){let s=String(x??'').replace(/\r|\n/g,' ');if(/^\s*[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
