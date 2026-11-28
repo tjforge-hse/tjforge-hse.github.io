@@ -2288,7 +2288,7 @@ function showQR(id){
  qrPlant.textContent=`${plantName(a.plant)} • ${a.area||"-"} • ${a.location||"-"} • Guest History QR`;
  drawQR(guestQRPayload(a),qrCanvas);qrModal.classList.add("open")
 }
-function printQR(){if(!qrCurrent)return;let data=qrCanvas.toDataURL("image/png"),w=window.open("","_blank","width=520,height=650");w.document.write(`<html><head><title>QR ${qrCurrent.id}</title><style>body{font-family:Arial;text-align:center;padding:30px}img{width:300px;image-rendering:pixelated}h1{margin-bottom:4px}p{color:#555}</style></head><body><h1>${qrCurrent.id}</h1><p>${plantName(qrCurrent.plant)} • ${qrCurrent.area||"-"} • ${qrCurrent.location||"-"}</p><img src="${data}"><p>TJFI SAFETY CONTROL SYSTEM</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
+function printQR(){if(!qrCurrent)return;let data=qrCanvas.toDataURL("image/png"),w=window.open("","_blank","width=520,height=650");w.document.write(`<html><head><title>QR ${qrCurrent.id}</title><style>body{font-family:Arial;text-align:center;padding:30px}img{width:3.7cm;height:3.7cm;image-rendering:pixelated;margin:10px 0}h1{margin-bottom:4px;font-size:20px}p{color:#222;font-size:12px;margin:3px 0}</style></head><body><h1>${qrCurrent.id}</h1><p>${plantName(qrCurrent.plant)} • ${qrCurrent.area||"-"} • ${qrCurrent.location||"-"}</p><img src="${data}"><p>TJFI SAFETY CONTROL SYSTEM</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
 
 
 function openGuestScan(){
