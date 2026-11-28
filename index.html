@@ -634,6 +634,7 @@ tbody tr:hover td{background:#fafdfc}
 <div class="modal" id="scanModal"><div class="modalbox" style="max-width:650px"><div class="modalhead"><h3>Scan QR Asset</h3><button class="close" onclick="stopQRScanner();closeModal('scanModal')">×</button></div>
  <div class="scanbox" id="scanBox"><div><div style="font-size:52px">▣</div><h3 style="margin:8px 0">Scan QR sebelum inspeksi</h3><p style="opacity:.8">Arahkan kamera ke QR yang tertempel pada APAR / Hydrant / safety equipment.</p><button class="btn primary" onclick="startQRScanner()">Aktifkan Kamera</button></div></div>
  <div class="scan-status" id="scanStatus">Belum memindai QR.</div>
+ <button class="btn soft small hidden" id="scanSwitchBtn" style="margin-top:8px" onclick="switchScanCam()">⟳ Ganti kamera (jika gambar terlalu lebar / sulit fokus)</button>
  <div style="margin-top:14px"><label>Fallback uji coba: masukkan isi QR</label><div style="display:flex;gap:8px"><input id="manualQR" class="input" placeholder="FIRE-SAFETY-ASSET|ID=APAR-OFC1-001|..."><button class="btn soft" onclick="verifyQRText(manualQR.value)">Verifikasi</button></div><small class="muted">Gunakan fallback hanya bila browser/perangkat tidak mendukung pemindaian kamera.</small></div>
 </div></div>
 
@@ -2327,20 +2328,23 @@ function verifyQRText(text){
  if(window.expectedScanAssetId&&window.expectedScanAssetId!==id)return toast(`QR tidak sesuai. Harus scan ${window.expectedScanAssetId}`);
  verifiedAssetId=id;stopQRScanner();closeModal("scanModal");go("inspection");selectInspectionAsset(id,true);toast("QR terverifikasi: "+id)
 }
+let scanRun=0;
 async function startQRScanner(){
+ const run=++scanRun;
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scanStatus.textContent="Browser tidak mendukung akses kamera. Pastikan halaman dibuka lewat alamat https://";return}
  const native="BarcodeDetector" in window;
  if(!native&&typeof jsQR!=="function"){scanStatus.textContent="Pemindai QR tidak tersedia di browser ini. Gunakan isian QR manual di bawah.";return}
  try{
   stopQRScanner();
-  scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}});
+  scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
+  await pickMainBackCam();
   scanBox.innerHTML='<video id="qrVideo" autoplay playsinline muted></video>';
   qrVideo.srcObject=scanStream;scanLoopActive=true;
   scanStatus.textContent="Kamera aktif. Arahkan ke QR asset.";
   const detector=native?new BarcodeDetector({formats:["qr_code"]}):null,cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});let last=0;
-  const found=text=>{verifyQRText(text);if(scanLoopActive&&scanStream&&scanModal.classList.contains("open"))setTimeout(()=>requestAnimationFrame(loop),1500)};
+  const found=text=>{verifyQRText(text);if(run===scanRun&&scanLoopActive&&scanStream&&scanModal.classList.contains("open"))setTimeout(()=>requestAnimationFrame(loop),1500)};
   const loop=async t=>{
-   if(!scanLoopActive||!scanStream)return;
+   if(run!==scanRun||!scanLoopActive||!scanStream)return;
    try{
     if(native){const codes=await detector.detect(qrVideo);if(codes.length)return found(codes[0].rawValue)}
     else if(t-last>120&&qrVideo.videoWidth){last=t;const sc=Math.min(1,640/qrVideo.videoWidth);cv.width=Math.round(qrVideo.videoWidth*sc);cv.height=Math.round(qrVideo.videoHeight*sc);cx.drawImage(qrVideo,0,0,cv.width,cv.height);const im=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(im.data,cv.width,cv.height,{inversionAttempts:"dontInvert"});if(r&&r.data)return found(r.data)}
@@ -2351,6 +2355,38 @@ async function startQRScanner(){
   scanLoopActive=false;
   scanStatus.textContent=e&&e.name==="NotAllowedError"?"Izin kamera ditolak. Klik ikon kamera/gembok di sebelah alamat situs, pilih Izinkan, lalu muat ulang halaman.":e&&e.name==="NotFoundError"?"Kamera tidak ditemukan pada perangkat ini.":e&&e.name==="NotReadableError"?"Kamera sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.":"Kamera tidak dapat diakses. Periksa izin kamera/browser."
  }
+}
+
+/* ===== Pilih lensa belakang utama (hindari ultra-wide/makro) ===== */
+let scanCams=[],scanCamIdx=0;
+function scanCamScore(d){const l=(d.label||"").toLowerCase();let sc=0;
+ if(/back|rear|environment|belakang|facing back/.test(l))sc+=10;
+ if(/front|user|depan|facing front/.test(l))sc-=50;
+ if(/ultra|0\.5|macro|makro|tele|depth|zoom/.test(l))sc-=30;
+ const m=l.match(/camera2?\s*(\d+)/);if(m)sc-=Number(m[1])*0.1;
+ return sc}
+async function pickMainBackCam(){
+ try{
+  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+  const backs=devs.filter(d=>scanCamScore(d)>=0).sort((a,b)=>scanCamScore(b)-scanCamScore(a));
+  scanCams=backs.length?backs:devs;
+  const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",devs.length<2);
+  let saved="";try{saved=localStorage.getItem("fsScanCam")||""}catch(e){}
+  let idx=Math.max(0,scanCams.findIndex(d=>d.deviceId===saved));
+  scanCamIdx=idx;
+  const cur=(scanStream&&scanStream.getVideoTracks()[0]&&scanStream.getVideoTracks()[0].getSettings().deviceId)||"";
+  const want=scanCams[idx];
+  if(want&&want.deviceId&&want.deviceId!==cur){
+   const keep=scanStream;
+   try{scanStream=null;const st=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:want.deviceId},width:{ideal:1280},height:{ideal:720}}});keep.getTracks().forEach(t=>t.stop());scanStream=st}catch(e){scanStream=keep}
+  }
+ }catch(e){}
+}
+async function switchScanCam(){
+ if(scanCams.length<2)return;
+ scanCamIdx=(scanCamIdx+1)%scanCams.length;const d=scanCams[scanCamIdx];
+ try{localStorage.setItem("fsScanCam",d.deviceId)}catch(e){}
+ try{await startQRScanner();scanStatus.textContent="Kamera diganti: "+(d.label||("kamera "+(scanCamIdx+1)))+". Arahkan ke QR asset."}catch(e){scanStatus.textContent="Gagal mengganti kamera."}
 }
 function stopQRScanner(){scanLoopActive=false;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}}
 
