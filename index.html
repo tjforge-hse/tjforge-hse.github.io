@@ -2291,9 +2291,22 @@ function showQR(id){
 function printQR(){if(!qrCurrent)return;let data=qrCanvas.toDataURL("image/png"),w=window.open("","_blank","width=520,height=650");w.document.write(`<html><head><title>QR ${qrCurrent.id}</title><style>body{font-family:Arial;text-align:center;padding:30px}img{width:3.7cm;height:3.7cm;image-rendering:pixelated;margin:10px 0}h1{margin-bottom:4px;font-size:20px}p{color:#222;font-size:12px;margin:3px 0}</style></head><body><h1>${qrCurrent.id}</h1><p>${plantName(qrCurrent.plant)} • ${qrCurrent.area||"-"} • ${qrCurrent.location||"-"}</p><img src="${data}"><p>TJFI SAFETY CONTROL SYSTEM</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
 
 
+
+/* Setiap scan modal dibuka: bersihkan sisa kamera sebelumnya lalu nyalakan kamera otomatis */
+let scanBoxInit=null;
+function resetScanUI(){
+ try{
+  if(scanBoxInit===null)scanBoxInit=scanBox.innerHTML;
+  scanRun++;stopQRScanner();
+  scanBox.innerHTML=scanBoxInit;
+  const info=document.getElementById("scanCamInfo");if(info)info.textContent="";
+  const zb=document.getElementById("scanZoomBox");if(zb)zb.style.display="none";
+  setTimeout(()=>{if(scanModal.classList.contains("open"))startQRScanner()},400)
+ }catch(e){}
+}
 function openGuestScan(){
  window.scanPurpose="guest";window.expectedScanAssetId=null;manualQR.value="";
- scanStatus.textContent="Scan QR asset untuk melihat histori tanpa login";scanModal.classList.add("open")
+ scanStatus.textContent="Scan QR asset untuk melihat histori tanpa login";scanModal.classList.add("open");resetScanUI()
 }
 async function showGuestAsset(id){
  app.style.display="none";loginScreen.style.display="none";guestScreen.classList.remove("hidden");
@@ -2310,7 +2323,7 @@ async function showGuestAsset(id){
 function exitGuest(){guestScreen.classList.add("hidden");app.style.display="none";loginScreen.style.display="grid";history.replaceState(null,"",location.pathname)}
 
 function openScanModal(expectedId=null){
- window.scanPurpose="inspection";window.expectedScanAssetId=expectedId||null;manualQR.value="";scanStatus.textContent=expectedId?`Scan QR asset ${expectedId}`:"Scan QR asset untuk memulai inspeksi";scanModal.classList.add("open")
+ window.scanPurpose="inspection";window.expectedScanAssetId=expectedId||null;manualQR.value="";scanStatus.textContent=expectedId?`Scan QR asset ${expectedId}`:"Scan QR asset untuk memulai inspeksi";scanModal.classList.add("open");resetScanUI()
 }
 function parseAssetFromQR(text){
  let t=(text||"").trim();
