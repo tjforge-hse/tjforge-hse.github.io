@@ -2350,9 +2350,10 @@ async function startQRScanner(){
  const native="BarcodeDetector" in window;
  if(!native&&typeof jsQR!=="function"){scanStatus.textContent="Pemindai QR tidak tersedia di browser ini. Gunakan isian QR manual di bawah.";return}
  try{
-  const had=!!scanStream;stopQRScanner();if(had)await new Promise(r=>setTimeout(r,350));
-  scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
-  await pickMainBackCam();
+  const had=!!scanStream;stopQRScanner();if(had)await scanDelay(500);
+  if(run!==scanRun)return;
+  const got=await acquireScanStream(run);
+  if(!got||run!==scanRun){if(run===scanRun)stopQRScanner();return}
   scanBox.innerHTML='<video id="qrVideo" autoplay playsinline muted></video>';
   qrVideo.srcObject=scanStream;scanLoopActive=true;setupScanZoom();
   scanStatus.textContent="Kamera aktif. Arahkan ke QR asset.";
@@ -2380,30 +2381,49 @@ function scanCamScore(d){const l=(d.label||"").toLowerCase();let sc=0;
  if(/ultra|0\.5|macro|makro|tele|depth|zoom/.test(l))sc-=30;
  const m=l.match(/camera2?\s*(\d+)/);if(m)sc-=Number(m[1])*0.1;
  return sc}
-async function pickMainBackCam(){
- try{
-  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
-  const backs=devs.filter(d=>scanCamScore(d)>=0).sort((a,b)=>scanCamScore(b)-scanCamScore(a));
-  scanCams=backs.length?backs:devs;window.scanAllDevs=devs;
-  const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",scanCams.length<2);
-  let saved="";try{saved=localStorage.getItem("fsScanCam")||""}catch(e){}
-  let idx=Math.max(0,scanCams.findIndex(d=>d.deviceId===saved));
-  scanCamIdx=idx;
-  const cur=(scanStream&&scanStream.getVideoTracks()[0]&&scanStream.getVideoTracks()[0].getSettings().deviceId)||"";
-  const want=scanCams[idx];
-  window.scanPickErr="";
-  if(want&&want.deviceId&&want.deviceId!==cur){
-   /* Android hanya mengizinkan satu kamera terbuka: lepas dulu kamera lama sebelum membuka yang baru */
-   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
-   await new Promise(r=>setTimeout(r,350));
-   try{scanStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:want.deviceId},width:{ideal:1280},height:{ideal:720}}})}
-   catch(e){
-    window.scanPickErr=(e&&e.name)||"error";
-    await new Promise(r=>setTimeout(r,250));
-    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
-   }
-  }
- }catch(e){if(!scanStream)throw e}
+const scanDelay=ms=>new Promise(r=>setTimeout(r,ms));
+const scanGum=c=>navigator.mediaDevices.getUserMedia({video:c});
+const scanHD={width:{ideal:1280},height:{ideal:720}};
+async function scanListVideo(){try{return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput")}catch(e){return []}}
+function scanSetCams(devs){
+ const backs=devs.filter(d=>scanCamScore(d)>=0).sort((a,b)=>scanCamScore(b)-scanCamScore(a));
+ scanCams=backs.length?backs:devs;window.scanAllDevs=devs;
+ const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",scanCams.length<2);
+ let saved="";try{saved=localStorage.getItem("fsScanCam")||""}catch(e){}
+ scanCamIdx=Math.max(0,scanCams.findIndex(d=>d.deviceId===saved));
+ return scanCams[scanCamIdx]
+}
+/* buka kamera tertentu; Android kadang butuh jeda sampai kamera lama benar-benar lepas -> coba ulang */
+async function scanOpenWanted(want,run){
+ let err="";
+ for(let i=0;i<4;i++){
+  if(run!==scanRun)return null;
+  try{return await scanGum(Object.assign({deviceId:{exact:want.deviceId}},scanHD))}
+  catch(e){err=(e&&e.name)||"error";if(err!=="NotReadableError"&&err!=="AbortError")break;await scanDelay(450*(i+1))}
+ }
+ window.scanPickErr=err;
+ if(run!==scanRun)return null;
+ return await scanGum({facingMode:{ideal:"environment"}})
+}
+async function acquireScanStream(run){
+ window.scanPickErr="";
+ let devs=await scanListVideo(),first=false;
+ if(!devs.length||devs.some(d=>!d.label)){
+  /* izin kamera belum diberikan: buka sekali dulu supaya nama kamera terbaca */
+  const st=await scanGum(Object.assign({facingMode:{ideal:"environment"}},scanHD));
+  if(run!==scanRun){st.getTracks().forEach(t=>t.stop());return null}
+  scanStream=st;first=true;devs=await scanListVideo()
+ }
+ const want=scanSetCams(devs);
+ const cur=first?((scanStream.getVideoTracks()[0].getSettings()||{}).deviceId||""):"";
+ if(want&&want.deviceId&&want.deviceId!==cur){
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;await scanDelay(500)}
+  const st=await scanOpenWanted(want,run);
+  if(!st)return null;
+  if(run!==scanRun){st.getTracks().forEach(t=>t.stop());return null}
+  scanStream=st
+ }
+ return scanStream
 }
 async function switchScanCam(){
  if(scanCams.length<2)return;
