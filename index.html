@@ -440,6 +440,27 @@ tbody tr:hover td{background:#fafdfc}
 .cam-box{background:#0f1f1c;min-height:240px}.cam-box video{width:100%;max-height:60vh;object-fit:contain;border-radius:12px;background:#000}
 .cam-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.cam-actions .btn{flex:1 1 auto}
 .scan-status{color:#5b7a73}
+/* ===== PENANDA APPROVAL PENDING ===== */
+.nav a{position:relative}
+.pend-badge{margin-left:auto;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#e5484d;color:#fff;font-size:12px;font-weight:900;display:none;align-items:center;justify-content:center;box-shadow:0 0 0 0 #e5484d99;animation:pendPulse 1.8s infinite}
+.pend-badge.on{display:inline-flex}
+@keyframes pendPulse{0%{box-shadow:0 0 0 0 #e5484d99}70%{box-shadow:0 0 0 9px #e5484d00}100%{box-shadow:0 0 0 0 #e5484d00}}
+.btn.mobile{position:relative}
+.pend-dot{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#e5484d;color:#fff;font-size:11px;font-weight:900;display:none;align-items:center;justify-content:center}
+.pend-dot.on{display:inline-flex}
+.pend-banner{display:none;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 16px;padding:14px 18px;border-radius:16px;background:#fff4dc;border:1.5px solid #f5a524;color:#6b4300}
+.pend-banner.on{display:flex}
+.pend-banner .pb-ico{font-size:26px;line-height:1}
+.pend-banner .pb-txt{flex:1;min-width:200px;font-size:14px}
+.pend-banner .pb-txt b{font-size:16px;color:#8a4b00}
+.pend-banner .pb-txt small{display:block;margin-top:2px;color:#8a6a2a;font-size:12px}
+.pend-banner button{background:#e5484d;color:#fff;border:0;border-radius:12px;padding:11px 18px;font-weight:900;cursor:pointer}
+.kpi.pend-hot{border:1.5px solid #f5a524;background:#fff8e8;cursor:pointer}
+.kpi.pend-hot .value{color:#d9480f}
+tr.pend-row td{background:#fffaf0}
+tr.pend-row td:first-child{box-shadow:inset 4px 0 0 #f5a524}
+.pend-age{display:block;font-size:11px;font-weight:800;color:#b45309}
+.pend-age.late{color:#d92d20}
 </style>
 </head>
 <body>
@@ -502,7 +523,7 @@ tbody tr:hover td{background:#fafdfc}
    <a href="#" id="navInventory" data-page="inventory"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Inventory</span></a>
    <a href="#" id="navInspection" data-page="inspection"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.7-8 9-4.8-1.3-8-4.5-8-9V6z"/><path d="M8.5 12l2.6 2.6L16 9.8"/></svg><span>Inspeksi</span></a>
    <a href="#" id="navCalendar" data-page="calendar"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><span>Kalender</span></a>
-   <a href="#" data-page="approval" id="approvalNav"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.2l2.8 2.8L16.2 9.5"/></svg><span>Approval</span></a>
+   <a href="#" data-page="approval" id="approvalNav"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.2l2.8 2.8L16.2 9.5"/></svg><span>Approval</span><b class="pend-badge" id="pendBadge">0</b></a>
    <a href="#" id="navFindings" data-page="findings"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.1"/></svg><span>Finding</span></a>
    <a href="#" id="navHistory" data-page="history"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Riwayat</span></a>
    <a href="#" id="navNotifications" data-page="notifications"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></svg><span>Notifikasi</span></a>
@@ -514,7 +535,7 @@ tbody tr:hover td{background:#fafdfc}
 
  <main class="main">
   <div class="topbar">
-   <div style="display:flex;gap:10px;align-items:flex-start"><button class="btn mobile" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><div class="title"><h2 id="pageTitle">Dashboard</h2><p id="pageSub">Monitoring keselamatan terintegrasi</p></div></div>
+   <div style="display:flex;gap:10px;align-items:flex-start"><button class="btn mobile" onclick="document.getElementById('sidebar').classList.toggle('open')">☰<b class="pend-dot" id="pendDot">0</b></button><div class="title"><h2 id="pageTitle">Dashboard</h2><p id="pageSub">Monitoring keselamatan terintegrasi</p></div></div>
    <div class="top-actions"><span id="syncBadge" class="tag info">○ Belum terhubung</span><div class="realtime"><div class="daydate" id="liveDate">-</div><div class="clock" id="liveClock">00:00:00</div></div><select id="plantFilter" class="select" style="width:auto;min-width:180px" onchange="renderAll()"></select><div class="userchip"><b id="userName"></b><span id="userRole" class="muted"></span></div><button class="btn" id="pwBtn" onclick="openPwModal(false)">🔑 Password</button><button class="btn" onclick="logout()">Keluar</button></div>
   </div>
 
@@ -2483,7 +2504,7 @@ async function saveInspection(){
  if(!selected||verifiedAssetId!==selected.id)return inspProblem("Scan QR asset terlebih dahulu. Sesi scan hilang, tutup checklist lalu scan QR lagi.");const cfgI=cfgFor(selected.type).items;let items=cfgI.map(x=>x.t);{const miss=items.findIndex((it,i)=>!(it in answers)||(cfgI[i].photo&&!evidencePhotos[i]));if(miss>=0){const noAns=!(items[miss] in answers),noPh=cfgI[miss].photo&&!evidencePhotos[miss];return inspProblem(`Belum lengkap: item ${miss+1} "${items[miss]}" — ${noAns&&noPh?"belum dipilih OK/NG/N/A dan belum ada foto bukti":noAns?"belum dipilih OK/NG/N/A":"belum ada foto bukti"}.`,miss)}}inspMsg.classList.add("hidden");
  let fail=Object.values(answers).includes("NG"),photo=await imageToSmallData(inspPhoto),id=Date.now(),perItemEvidence={};items.forEach((item,i)=>perItemEvidence[item]=evidencePhotos[i]);DB.inspections.unshift({id,asset:selected.id,plant:selected.plant,date:localISO(),frequency:frequency.value,result:fail?"FAIL":"PASS",answers:{...answers},evidence:perItemEvidence,remark:inspRemark.value,photo,inspector:me.name,approval:"PENDING",approvedBy:null,qrVerified:true});if(fail){markBad(selected,"NG");let ng=Object.entries(answers).filter(x=>x[1]==="NG").map(x=>x[0]);createFinding(selected.id,"Item NG: "+ng.join(", "),"High","HSE / Maintenance",isoOffset(3),photo)}saveDB();toast(`Inspeksi ${fail?"FAIL":"PASS"} tersimpan & menunggu approval`);verifiedAssetId=null;selected=null;answers={};evidencePhotos={};checklistArea.innerHTML="Checklist akan tampil setelah scan QR.";inspectionFooter.classList.add("hidden");renderAll()
 }
-function renderApproval(){let rows=scopedInspections().filter(i=>i.approval==="PENDING");approvalTable.innerHTML=rows.map(i=>`<tr><td>${i.id}</td><td><b>${i.asset}</b></td><td>${plantName(i.plant)}</td><td>${fmtDate(i.date)}</td><td>${i.inspector}</td><td>${tag(i.result)}</td><td>${i.evidence?Object.keys(i.evidence).length:0} foto</td><td>${i.photo?`<img class="photo" src="${i.photo}" onclick="window.open(this.src,'_blank')">`:"-"}</td><td><button class="btn primary small" onclick="openInspectionReview(${i.id})">🔍 Periksa Hasil</button></td></tr>`).join("")||'<tr><td colspan="9" class="muted">Tidak ada inspeksi pending.</td></tr>'}
+function renderApproval(){let rows=scopedInspections().filter(i=>i.approval==="PENDING");approvalTable.innerHTML=rows.map(i=>`<tr class="pend-row"><td>${i.id}</td><td><b>${i.asset}</b></td><td>${plantName(i.plant)}</td><td>${fmtDate(i.date)}${pendAge(i)}</td><td>${i.inspector}</td><td>${tag(i.result)}</td><td>${i.evidence?Object.keys(i.evidence).length:0} foto</td><td>${i.photo?`<img class="photo" src="${i.photo}" onclick="window.open(this.src,'_blank')">`:"-"}</td><td><button class="btn primary small" onclick="openInspectionReview(${i.id})">🔍 Periksa Hasil</button></td></tr>`).join("")||'<tr><td colspan="9" class="muted">Tidak ada inspeksi pending.</td></tr>'}
 
 let reviewingId=null;
 function openInspectionReview(id){
@@ -3207,7 +3228,28 @@ function renderInspectionTasks(){
  taskList.innerHTML=rows.map(x=>`<div class="tk-row"><div class="grow"><b>${esc(x.a.id)}</b><div class="muted" style="font-size:12px">${esc(x.a.area||"-")} • ${esc(x.a.location||"-")}${me.plant==="ALL"?" • "+esc(plantName(x.a.plant)):""}</div></div><div style="text-align:right">${schedTag(x.r)}<div class="muted" style="font-size:11px;margin-top:3px">${esc(schedText(x.r))}</div></div></div>`).join("")}
 function cfgSchedToggle(){cfgSchedBox.classList.toggle("hidden",cfgSchedMode.value!=="monthly")}
 
-function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderJobList,renderAssignSummary,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}})}
+function renderAll(){if(!me)return;[renderDashboard,renderInventory,renderInspectionAssets,renderCalendar,renderApproval,renderFindings,renderHistory,renderInspectionTasks,renderJobList,renderAssignSummary,renderNotifications,populateFindingAssets,renderUsers].forEach(f=>{try{f()}catch(e){console.error(f.name,e)}});try{pendUpdate()}catch(e){console.error("pendUpdate",e)}}
+/* ===== PENANDA APPROVAL PENDING ===== */
+const BASE_TITLE=document.title;let pendLast=null;
+function pendList(){if(!me||me.role!=="admin"||!DB||!DB.inspections)return[];const ok=new Set(DB.assets.filter(a=>allowedPlant(a.plant)).map(a=>a.id));return DB.inspections.filter(i=>i.approval==="PENDING"&&ok.has(i.asset))}
+function pendDays(i){const d=new Date(String(i.date).slice(0,10)+"T00:00:00");if(isNaN(d))return 0;const t=new Date();t.setHours(0,0,0,0);return Math.max(0,Math.round((t-d)/864e5))}
+function pendAge(i){const n=pendDays(i);return `<span class="pend-age${n>=2?" late":""}">${n===0?"Masuk hari ini":"Menunggu "+n+" hari"}</span>`}
+function pendEnsureBanner(secId,id){let sec=document.getElementById(secId);if(!sec)return null;let b=document.getElementById(id);if(!b){b=document.createElement("div");b.id=id;b.className="pend-banner";sec.insertBefore(b,sec.firstChild)}return b}
+function pendUpdate(){
+ const L=pendList(),n=L.length;
+ [pendBadge,pendDot].forEach(e=>{if(!e)return;e.textContent=n>99?"99+":n;e.classList.toggle("on",n>0)});
+ document.title=(n>0?"("+n+") ":"")+BASE_TITLE;
+ try{if(navigator.setAppBadge){n>0?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}
+ const old=L.reduce((m,i)=>Math.max(m,pendDays(i)),0),plants=[...new Set(L.map(i=>plantName(i.plant)))].join(", ");
+ const html=`<div class="pb-ico">🔔</div><div class="pb-txt"><b>${n} inspeksi menunggu approval Anda</b><small>${plants} • terlama ${old===0?"masuk hari ini":old+" hari"}</small></div>`;
+ const b1=pendEnsureBanner("dashboard","pendBannerDash");
+ if(b1){b1.classList.toggle("on",n>0);if(n>0){b1.innerHTML=html+`<button onclick="go('approval')">Periksa sekarang →</button>`}}
+ const b2=pendEnsureBanner("approval","pendBannerAppr");
+ if(b2){b2.classList.toggle("on",n>0);if(n>0)b2.innerHTML=html}
+ const k=document.getElementById("kPending");if(k){const kp=k.closest(".kpi");if(kp){kp.classList.toggle("pend-hot",n>0);kp.onclick=n>0?()=>go("approval"):null}}
+ if(pendLast!==null&&n>pendLast)toast("🔔 Ada "+(n-pendLast)+" inspeksi baru menunggu approval");
+ pendLast=n}
+
 
 function bootHide(){bootLoader.classList.remove("show")}
 function bootError(e){bootLoader.classList.add("show");bootMsg.textContent="Tidak dapat memuat dashboard: "+((e&&e.message)||"gangguan koneksi")+". Sesi login Anda masih tersimpan.";bootActions.classList.remove("hidden");bootLoader.querySelector(".ld-anim").style.display="none";bootLoader.querySelector(".ld-line").style.display="none"}
