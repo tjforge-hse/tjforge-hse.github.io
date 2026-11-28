@@ -2371,7 +2371,7 @@ async function pickMainBackCam(){
  try{
   const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
   const backs=devs.filter(d=>scanCamScore(d)>=0).sort((a,b)=>scanCamScore(b)-scanCamScore(a));
-  scanCams=backs.length?backs:devs;
+  scanCams=backs.length?backs:devs;window.scanAllDevs=devs;
   const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",scanCams.length<2);
   let saved="";try{saved=localStorage.getItem("fsScanCam")||""}catch(e){}
   let idx=Math.max(0,scanCams.findIndex(d=>d.deviceId===saved));
@@ -2399,7 +2399,7 @@ function setupScanZoom(){
   const cap=tr.getCapabilities?tr.getCapabilities():{};
   const st=tr.getSettings?tr.getSettings():{};
   const info=document.getElementById("scanCamInfo");
-  if(info)info.textContent="Kamera: "+(tr.label||"-")+" • kamera belakang terdeteksi: "+(scanCams.length||"?");
+  if(info){info.style.whiteSpace="pre-line";info.textContent="Kamera dipakai: "+(tr.label||"-")+"\nKamera belakang terdeteksi: "+(scanCams.length||"?")+" dari "+((window.scanAllDevs||[]).length||"?")+" kamera\nDaftar: "+((window.scanAllDevs||[]).map(d=>(d.label||"?")).join(" | ")||"-")+(cap.zoom?"\nZoom: "+cap.zoom.min+"–"+cap.zoom.max:"\nZoom: tidak tersedia")}
   if(cap.zoom&&cap.zoom.max>cap.zoom.min){
    const z=document.getElementById("scanZoom");z.min=cap.zoom.min;z.max=cap.zoom.max;z.step=cap.zoom.step||0.1;z.value=st.zoom||cap.zoom.min;
    document.getElementById("scanZoomVal").textContent=(+z.value).toFixed(1)+"x";box.style.display="flex"
