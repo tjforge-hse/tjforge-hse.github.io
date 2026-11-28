@@ -635,6 +635,8 @@ tbody tr:hover td{background:#fafdfc}
  <div class="scanbox" id="scanBox"><div><div style="font-size:52px">▣</div><h3 style="margin:8px 0">Scan QR sebelum inspeksi</h3><p style="opacity:.8">Arahkan kamera ke QR yang tertempel pada APAR / Hydrant / safety equipment.</p><button class="btn primary" onclick="startQRScanner()">Aktifkan Kamera</button></div></div>
  <div class="scan-status" id="scanStatus">Belum memindai QR.</div>
  <button class="btn soft small hidden" id="scanSwitchBtn" style="margin-top:8px" onclick="switchScanCam()">⟳ Ganti kamera (jika gambar terlalu lebar / sulit fokus)</button>
+ <div id="scanZoomBox" class="hidden" style="margin-top:10px;display:none;align-items:center;gap:10px"><b style="font-size:13px">Zoom</b><input type="range" id="scanZoom" style="flex:1" oninput="setScanZoom(this.value)"><span id="scanZoomVal" style="font-size:13px;min-width:38px;text-align:right">1x</span></div>
+ <div class="scan-hint" id="scanCamInfo" style="font-size:12px;color:var(--muted,#64748b);margin-top:6px"></div>
  <div style="margin-top:14px"><label>Fallback uji coba: masukkan isi QR</label><div style="display:flex;gap:8px"><input id="manualQR" class="input" placeholder="FIRE-SAFETY-ASSET|ID=APAR-OFC1-001|..."><button class="btn soft" onclick="verifyQRText(manualQR.value)">Verifikasi</button></div><small class="muted">Gunakan fallback hanya bila browser/perangkat tidak mendukung pemindaian kamera.</small></div>
 </div></div>
 
@@ -2339,7 +2341,7 @@ async function startQRScanner(){
   scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
   await pickMainBackCam();
   scanBox.innerHTML='<video id="qrVideo" autoplay playsinline muted></video>';
-  qrVideo.srcObject=scanStream;scanLoopActive=true;
+  qrVideo.srcObject=scanStream;scanLoopActive=true;setupScanZoom();
   scanStatus.textContent="Kamera aktif. Arahkan ke QR asset.";
   const detector=native?new BarcodeDetector({formats:["qr_code"]}):null,cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});let last=0;
   const found=text=>{verifyQRText(text);if(run===scanRun&&scanLoopActive&&scanStream&&scanModal.classList.contains("open"))setTimeout(()=>requestAnimationFrame(loop),1500)};
@@ -2370,7 +2372,7 @@ async function pickMainBackCam(){
   const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
   const backs=devs.filter(d=>scanCamScore(d)>=0).sort((a,b)=>scanCamScore(b)-scanCamScore(a));
   scanCams=backs.length?backs:devs;
-  const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",devs.length<2);
+  const btn=document.getElementById("scanSwitchBtn");if(btn)btn.classList.toggle("hidden",scanCams.length<2);
   let saved="";try{saved=localStorage.getItem("fsScanCam")||""}catch(e){}
   let idx=Math.max(0,scanCams.findIndex(d=>d.deviceId===saved));
   scanCamIdx=idx;
@@ -2387,6 +2389,25 @@ async function switchScanCam(){
  scanCamIdx=(scanCamIdx+1)%scanCams.length;const d=scanCams[scanCamIdx];
  try{localStorage.setItem("fsScanCam",d.deviceId)}catch(e){}
  try{await startQRScanner();scanStatus.textContent="Kamera diganti: "+(d.label||("kamera "+(scanCamIdx+1)))+". Arahkan ke QR asset."}catch(e){scanStatus.textContent="Gagal mengganti kamera."}
+}
+
+function setupScanZoom(){
+ const box=document.getElementById("scanZoomBox");if(!box)return;
+ box.style.display="none";
+ try{
+  const tr=scanStream&&scanStream.getVideoTracks()[0];if(!tr)return;
+  const cap=tr.getCapabilities?tr.getCapabilities():{};
+  const st=tr.getSettings?tr.getSettings():{};
+  const info=document.getElementById("scanCamInfo");
+  if(info)info.textContent="Kamera: "+(tr.label||"-")+" • kamera belakang terdeteksi: "+(scanCams.length||"?");
+  if(cap.zoom&&cap.zoom.max>cap.zoom.min){
+   const z=document.getElementById("scanZoom");z.min=cap.zoom.min;z.max=cap.zoom.max;z.step=cap.zoom.step||0.1;z.value=st.zoom||cap.zoom.min;
+   document.getElementById("scanZoomVal").textContent=(+z.value).toFixed(1)+"x";box.style.display="flex"
+  }
+ }catch(e){}
+}
+async function setScanZoom(v){
+ try{const tr=scanStream&&scanStream.getVideoTracks()[0];if(!tr)return;await tr.applyConstraints({advanced:[{zoom:Number(v)}]});document.getElementById("scanZoomVal").textContent=(+v).toFixed(1)+"x"}catch(e){}
 }
 function stopQRScanner(){scanLoopActive=false;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}}
 
