@@ -2337,7 +2337,7 @@ async function startQRScanner(){
  const native="BarcodeDetector" in window;
  if(!native&&typeof jsQR!=="function"){scanStatus.textContent="Pemindai QR tidak tersedia di browser ini. Gunakan isian QR manual di bawah.";return}
  try{
-  stopQRScanner();
+  const had=!!scanStream;stopQRScanner();if(had)await new Promise(r=>setTimeout(r,350));
   scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
   await pickMainBackCam();
   scanBox.innerHTML='<video id="qrVideo" autoplay playsinline muted></video>';
@@ -2378,17 +2378,25 @@ async function pickMainBackCam(){
   scanCamIdx=idx;
   const cur=(scanStream&&scanStream.getVideoTracks()[0]&&scanStream.getVideoTracks()[0].getSettings().deviceId)||"";
   const want=scanCams[idx];
+  window.scanPickErr="";
   if(want&&want.deviceId&&want.deviceId!==cur){
-   const keep=scanStream;
-   try{scanStream=null;const st=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:want.deviceId},width:{ideal:1280},height:{ideal:720}}});keep.getTracks().forEach(t=>t.stop());scanStream=st}catch(e){scanStream=keep}
+   /* Android hanya mengizinkan satu kamera terbuka: lepas dulu kamera lama sebelum membuka yang baru */
+   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+   await new Promise(r=>setTimeout(r,350));
+   try{scanStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:want.deviceId},width:{ideal:1280},height:{ideal:720}}})}
+   catch(e){
+    window.scanPickErr=(e&&e.name)||"error";
+    await new Promise(r=>setTimeout(r,250));
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})
+   }
   }
- }catch(e){}
+ }catch(e){if(!scanStream)throw e}
 }
 async function switchScanCam(){
  if(scanCams.length<2)return;
  scanCamIdx=(scanCamIdx+1)%scanCams.length;const d=scanCams[scanCamIdx];
  try{localStorage.setItem("fsScanCam",d.deviceId)}catch(e){}
- try{await startQRScanner();scanStatus.textContent="Kamera diganti: "+(d.label||("kamera "+(scanCamIdx+1)))+". Arahkan ke QR asset."}catch(e){scanStatus.textContent="Gagal mengganti kamera."}
+ try{await startQRScanner();const tr=scanStream&&scanStream.getVideoTracks()[0];const act=tr?tr.label:"";scanStatus.textContent=(act&&act===d.label?"Kamera diganti: ":"Gagal membuka "+(d.label||"kamera")+" ("+(window.scanPickErr||"tidak diketahui")+"). Kamera aktif: ")+act+". Arahkan ke QR asset."}catch(e){scanStatus.textContent="Gagal mengganti kamera."}
 }
 
 function setupScanZoom(){
